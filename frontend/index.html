@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALM Vault V3 | Delta-Neutral Yield</title>
+    <!-- TailwindCSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#0f172a',
+                        darker: '#020617',
+                        primary: '#3b82f6',
+                        primaryHover: '#2563eb',
+                        accent: '#10b981'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Ethers.js v6 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+</head>
+<body class="bg-darker text-slate-200 font-sans min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="border-b border-slate-800 bg-dark bg-opacity-50 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-accent flex items-center justify-center">
+                    <span class="font-bold text-white tracking-tighter">V3</span>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight">ALMVault</h1>
+            </div>
+            <button id="connectWalletBtn" class="bg-primary hover:bg-primaryHover text-white px-5 py-2 rounded-lg font-medium transition-all shadow-lg shadow-primary/20">
+                Connect Wallet
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow flex items-center justify-center p-4">
+        <div class="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Info Panel -->
+            <div class="bg-dark rounded-2xl border border-slate-800 p-6 shadow-xl flex flex-col justify-between relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-primary opacity-5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
+                
+                <div>
+                    <h2 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Protocol Status</h2>
+                    <div class="flex items-baseline space-x-2 mb-6">
+                        <span class="text-4xl font-bold text-white">Delta-Neutral</span>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                            <span class="text-slate-400">Target APR</span>
+                            <span class="text-accent font-bold text-lg">33% - 180%</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                            <span class="text-slate-400">Total TVL</span>
+                            <span id="tvlDisplay" class="font-medium">Loading...</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                            <span class="text-slate-400">Strategy</span>
+                            <span class="font-medium text-right text-sm">Aave V3 Short + Uni V3 CL</span>
+                        </div>
+                        <div class="flex justify-between items-center pb-2">
+                            <span class="text-slate-400">Network</span>
+                            <span class="font-medium text-blue-400 flex items-center">
+                                <span class="w-2 h-2 rounded-full bg-blue-400 mr-2 animate-pulse"></span>
+                                Base Mainnet
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+                    <p class="text-sm text-slate-300">
+                        <span class="text-accent font-semibold">✨ Liquidity Mining is LIVE!</span>
+                        Deposit USDC to automatically start accruing <span class="font-bold text-white">$vALM</span> points.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Interaction Panel -->
+            <div class="bg-dark rounded-2xl border border-slate-800 p-6 shadow-xl relative">
+                <div id="overlay" class="absolute inset-0 bg-dark/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-2xl transition-opacity">
+                    <svg class="w-12 h-12 text-slate-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 9l-6 6m0-6l6 6"></path></svg>
+                    <p class="text-slate-300 font-medium">Please connect wallet to interact</p>
+                </div>
+
+                <div class="mb-6 flex justify-between items-end">
+                    <h2 class="text-xl font-bold text-white">Vault Interface</h2>
+                    <div class="text-right">
+                        <p class="text-xs text-slate-500 mb-1">Your USDC Balance</p>
+                        <p id="userBalanceDisplay" class="font-mono text-sm font-semibold">0.00</p>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="flex border-b border-slate-800 mb-6">
+                    <button id="tabDeposit" class="flex-1 pb-3 text-center font-medium border-b-2 border-primary text-white transition-colors">Deposit</button>
+                    <button id="tabWithdraw" class="flex-1 pb-3 text-center font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-300 transition-colors">Withdraw</button>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-2">Amount (USDC)</label>
+                        <div class="relative">
+                            <input type="number" id="amountInput" placeholder="0.00" class="w-full bg-slate-900 border border-slate-700 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono">
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                <span class="text-slate-500 font-semibold">USDC</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="actionBtn" class="w-full bg-primary hover:bg-primaryHover text-white py-3 rounded-lg font-bold shadow-lg shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center">
+                        <span>Approve & Deposit</span>
+                    </button>
+
+                    <p id="statusMsg" class="text-sm text-center min-h-[20px] font-mono mt-4"></p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 py-6 mt-auto">
+        <div class="max-w-6xl mx-auto px-4 text-center text-slate-500 text-sm">
+            &copy; 2026 ALMVault Protocol. Deployed on Base.
+        </div>
+    </footer>
+
+    <!-- DApp Logic -->
+    <script>
+        const VAULT_ADDRESS = "0x87eE1eCa84E9308946eEcba998625272A6ED9a00";
+        const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+        const BASE_CHAIN_ID = 8453;
+        
+        // Use public Base RPC for reading data without wallet
+        const PUBLIC_RPC = "https://mainnet.base.org";
+
+        const VAULT_ABI = [
+            "function totalAssets() view returns (uint256)",
+            "function deposit(uint256 assets, address receiver) returns (uint256 shares)",
+            "function withdraw(uint256 assets, address receiver, address owner) returns (uint256 shares)",
+            "function maxWithdraw(address owner) view returns (uint256)"
+        ];
+
+        const USDC_ABI = [
+            "function balanceOf(address account) view returns (uint256)",
+            "function approve(address spender, uint256 amount) returns (bool)",
+            "function allowance(address owner, address spender) view returns (uint256)"
+        ];
+
+        let provider;
+        let signer;
+        let userAddress;
+        let currentMode = 'deposit'; // 'deposit' or 'withdraw'
+
+        const connectWalletBtn = document.getElementById('connectWalletBtn');
+        const tvlDisplay = document.getElementById('tvlDisplay');
+        const userBalanceDisplay = document.getElementById('userBalanceDisplay');
+        const overlay = document.getElementById('overlay');
+        const tabDeposit = document.getElementById('tabDeposit');
+        const tabWithdraw = document.getElementById('tabWithdraw');
+        const actionBtn = document.getElementById('actionBtn');
+        const amountInput = document.getElementById('amountInput');
+        const statusMsg = document.getElementById('statusMsg');
+
+        // Initialize public read-only provider for TVL
+        async function fetchTVL() {
+            try {
+                const readProvider = new ethers.JsonRpcProvider(PUBLIC_RPC);
+                const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, readProvider);
+                const totalAssets = await vaultContract.totalAssets();
+                const formatted = ethers.formatUnits(totalAssets, 6);
+                tvlDisplay.innerText = `$${parseFloat(formatted).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            } catch (error) {
+                console.error("Error fetching TVL:", error);
+                tvlDisplay.innerText = "Error loading TVL";
+            }
+        }
+
+        async function connectWallet() {
+            if (typeof window.ethereum === 'undefined') {
+                showStatus("MetaMask is not installed!", "text-red-500");
+                return;
+            }
+
+            try {
+                provider = new ethers.BrowserProvider(window.ethereum);
+                const network = await provider.getNetwork();
+                
+                if (Number(network.chainId) !== BASE_CHAIN_ID) {
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: ethers.toBeHex(BASE_CHAIN_ID) }],
+                        });
+                    } catch (switchError) {
+                        showStatus("Please switch to Base Mainnet.", "text-red-500");
+                        return;
+                    }
+                }
+
+                await provider.send("eth_requestAccounts", []);
+                signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
+
+                connectWalletBtn.innerText = `${userAddress.substring(0, 6)}...${userAddress.substring(38)}`;
+                connectWalletBtn.classList.remove('bg-primary');
+                connectWalletBtn.classList.add('bg-slate-700', 'hover:bg-slate-600');
+                
+                overlay.style.opacity = '0';
+                setTimeout(() => overlay.style.display = 'none', 300);
+
+                await updateUserBalance();
+                
+                // Setup listeners
+                window.ethereum.on('accountsChanged', () => window.location.reload());
+                window.ethereum.on('chainChanged', () => window.location.reload());
+
+            } catch (error) {
+                console.error("Connection error:", error);
+                showStatus("Failed to connect wallet.", "text-red-500");
+            }
+        }
+
+        async function updateUserBalance() {
+            if (!signer) return;
+            try {
+                if (currentMode === 'deposit') {
+                    const usdcContract = new ethers.Contract(USDC_ADDRESS, USDC_ABI, provider);
+                    const balance = await usdcContract.balanceOf(userAddress);
+                    userBalanceDisplay.innerText = parseFloat(ethers.formatUnits(balance, 6)).toLocaleString(undefined, {maximumFractionDigits: 4});
+                } else {
+                    const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, provider);
+                    const maxWith = await vaultContract.maxWithdraw(userAddress);
+                    userBalanceDisplay.innerText = parseFloat(ethers.formatUnits(maxWith, 6)).toLocaleString(undefined, {maximumFractionDigits: 4}) + " (Vault)";
+                }
+            } catch (error) {
+                console.error("Balance fetch error:", error);
+            }
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            amountInput.value = '';
+            statusMsg.innerText = '';
+            updateUserBalance();
+
+            if (mode === 'deposit') {
+                tabDeposit.classList.replace('border-transparent', 'border-primary');
+                tabDeposit.classList.replace('text-slate-500', 'text-white');
+                tabWithdraw.classList.replace('border-primary', 'border-transparent');
+                tabWithdraw.classList.replace('text-white', 'text-slate-500');
+                actionBtn.innerHTML = '<span>Approve & Deposit</span>';
+            } else {
+                tabWithdraw.classList.replace('border-transparent', 'border-primary');
+                tabWithdraw.classList.replace('text-slate-500', 'text-white');
+                tabDeposit.classList.replace('border-primary', 'border-transparent');
+                tabDeposit.classList.replace('text-white', 'text-slate-500');
+                actionBtn.innerHTML = '<span>Withdraw</span>';
+            }
+        }
+
+        function showStatus(msg, colorClass = "text-slate-400") {
+            statusMsg.className = `text-sm text-center min-h-[20px] font-mono mt-4 ${colorClass}`;
+            statusMsg.innerText = msg;
+        }
+
+        function setLoading(isLoading) {
+            actionBtn.disabled = isLoading;
+            amountInput.disabled = isLoading;
+            if (isLoading) {
+                actionBtn.classList.add('animate-pulse');
+            } else {
+                actionBtn.classList.remove('animate-pulse');
+            }
+        }
+
+        async function handleAction() {
+            if (!signer) return;
+            const amountStr = amountInput.value;
+            if (!amountStr || isNaN(amountStr) || Number(amountStr) <= 0) {
+                showStatus("Please enter a valid amount.", "text-red-500");
+                return;
+            }
+
+            setLoading(true);
+            try {
+                const amount = ethers.parseUnits(amountStr, 6); // USDC is 6 decimals
+                
+                if (currentMode === 'deposit') {
+                    const usdcContract = new ethers.Contract(USDC_ADDRESS, USDC_ABI, signer);
+                    const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, signer);
+
+                    // Check allowance
+                    showStatus("Checking allowance...");
+                    const allowance = await usdcContract.allowance(userAddress, VAULT_ADDRESS);
+                    if (allowance < amount) {
+                        showStatus("Requesting USDC approval...");
+                        const txApprove = await usdcContract.approve(VAULT_ADDRESS, ethers.MaxUint256);
+                        await txApprove.wait();
+                    }
+
+                    showStatus("Depositing to Vault...");
+                    const txDeposit = await vaultContract.deposit(amount, userAddress);
+                    await txDeposit.wait();
+                    
+                    showStatus(`Successfully deposited ${amountStr} USDC! 🎉`, "text-accent");
+                } else {
+                    const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, signer);
+                    showStatus("Withdrawing from Vault...");
+                    const txWithdraw = await vaultContract.withdraw(amount, userAddress, userAddress);
+                    await txWithdraw.wait();
+                    
+                    showStatus(`Successfully withdrew ${amountStr} USDC! ✅`, "text-accent");
+                }
+
+                amountInput.value = '';
+                await updateUserBalance();
+                await fetchTVL();
+
+            } catch (error) {
+                console.error("Action error:", error);
+                const errMsg = error.reason || error.message || "Transaction failed";
+                showStatus(`Error: ${errMsg.substring(0, 50)}...`, "text-red-500");
+            }
+            setLoading(false);
+        }
+
+        // Event Listeners
+        connectWalletBtn.addEventListener('click', connectWallet);
+        tabDeposit.addEventListener('click', () => setMode('deposit'));
+        tabWithdraw.addEventListener('click', () => setMode('withdraw'));
+        actionBtn.addEventListener('click', handleAction);
+
+        // Init
+        fetchTVL();
+    </script>
+</body>
+</html>
