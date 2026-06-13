@@ -804,6 +804,52 @@
         
         updateTicker();
         listenToEvents();
+
+        // --- Live PnL Chart Logic ---
+        async function loadPnLChart() {
+            try {
+                const response = await fetch('pnl_history.json');
+                if (!response.ok) return;
+                const data = await response.json();
+                
+                const labels = data.map(item => item.timestamp ? item.timestamp.split(' ')[1] : item.Timestamp);
+                const pnlData = data.map(item => parseFloat(item.net_worth || item.Profit_USD));
+                
+                const ctx = document.getElementById('pnlChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Net Worth (USD)',
+                            data: pnlData,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 1,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' } },
+                            y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' } }
+                        }
+                    }
+                });
+            } catch (err) {
+                console.error("Failed to load chart data:", err);
+            }
+        }
+        if (document.getElementById('pnlChart')) {
+            loadPnLChart();
+        }
     </script>
 </body>
 </html>
