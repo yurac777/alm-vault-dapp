@@ -60,11 +60,6 @@
                 <h1 class="text-xl font-bold tracking-tight">almUSD</h1>
             </div>
             <div class="flex items-center space-x-3">
-                <select id="langSelect" class="bg-slate-800 border border-slate-700 text-slate-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer transition-colors" onchange="changeLanguage(this.value)">
-                    <option value="en">EN</option>
-                    <option value="ru">RU</option>
-                    <option value="zh">ZH</option>
-                </select>
                 <button id="connectWalletBtn" class="bg-primary hover:bg-primaryHover text-white px-4 py-2 rounded-lg font-medium transition-all shadow-lg shadow-primary/20" data-i18n="connect_wallet">
                     Connect Wallet
                 </button>
@@ -93,7 +88,7 @@
                             <span class="text-accent font-bold text-lg">30% - 150%</span>
                         </div>
                         <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-                            <span class="text-slate-400" data-i18n="total_tvl">Total Minted</span>
+                            <span class="text-slate-400" data-i18n="total_tvl">Total TVL</span>
                             <span id="tvlDisplay" class="font-medium">Loading...</span>
                         </div>
                         <div class="flex justify-between items-center pt-2 pb-1">
@@ -184,7 +179,7 @@
                     </div>
 
                     <button id="actionBtn" class="w-full bg-primary hover:bg-primaryHover text-white py-3 rounded-lg font-bold shadow-lg shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center">
-                        <span data-i18n="btn_approve">Approve & Deposit</span>
+                        <span data-i18n="btn_approve">Approve & Mint</span>
                     </button>
 
                     <p id="statusMsg" class="text-sm text-center min-h-[20px] font-mono mt-4"></p>
@@ -207,7 +202,7 @@
                 </h3>
                 <p class="text-sm text-slate-400 mb-4" data-i18n="bridge_desc">Bridge assets from any chain directly to USDC on Base to mint almUSD.</p>
                 <div class="rounded-xl overflow-hidden border border-slate-700 bg-slate-900">
-                    <iframe src="https://jumper.exchange/?toChain=8453&toToken=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913&variant=compact" width="100%" height="450" frameborder="0" style="border:0;"></iframe>
+                    <iframe src="https://jumper.exchange/widget" width="100%" height="450" frameborder="0" style="border:0;"></iframe>
                 </div>
             </div>
             </div>
@@ -349,7 +344,7 @@
                 protocol_status: "Protocol Status",
                 delta_neutral: "The Ethena Killer",
                 target_apr: "Target APY",
-                total_tvl: "Total Minted",
+                total_tvl: "Total TVL",
                 strategy: "Architecture",
                 strategy_desc: "100% On-Chain (Aave + Uni V3)",
                 network: "Network",
@@ -363,7 +358,7 @@
                 tab_deposit: "Mint almUSD",
                 tab_withdraw: "Redeem USDC",
                 amount_label: "Amount (USDC)",
-                btn_approve: "Mint almUSD",
+                btn_approve: "Approve & Mint",
                 btn_withdraw: "Redeem USDC",
                 roi_title: "Yield Predictor",
                 roi_desc: "Calculate your expected return based on dynamic APY (80% est).",
@@ -384,84 +379,6 @@
                 faq_q1: "Are my funds safe?",
                 faq_a1: "Yes. The contract inherits the fully audited OpenZeppelin ERC-4626 standard. Admin keys belong to a cold wallet. The Keeper bot can only execute rebalance operations and does not have any permissions to withdraw user funds.",
                 pls_connect: "Please connect wallet to interact"
-            },
-            ru: {
-                connect_wallet: "Подключить",
-                protocol_status: "Статус Протокола",
-                delta_neutral: "Дельта-Нейтрально",
-                target_apr: "Целевой APR",
-                total_tvl: "Общий TVL",
-                strategy: "Стратегия",
-                strategy_desc: "Шорт Aave V3 + Uni V3 CL",
-                network: "Сеть",
-                lm_live: "✨ Майнинг ликвидности АКТИВЕН!",
-                lm_desc: "Внесите USDC для автоматического заработка",
-                lm_pts: "поинтов.",
-                vault_interface: "Интерфейс Хранилища",
-                your_balance: "Ваш баланс USDC",
-                tab_deposit: "Депозит",
-                tab_withdraw: "Вывод",
-                amount_label: "Сумма (USDC)",
-                btn_approve: "Одобрить и Внести",
-                btn_withdraw: "Вывести",
-                roi_title: "Прогноз Доходности",
-                roi_desc: "Расчет ожидаемой прибыли по динамическому APR (оценка 80%).",
-                invest_amount: "Сумма Инвестиции ($)",
-                monthly_yield: "Прибыль в месяц",
-                yearly_yield: "Прибыль в год",
-                benchmark_title: "Почему ALM Vault?",
-                strategy_col: "Стратегия",
-                apr_col: "Ожидаемый APY",
-                risk_col: "Профиль Риска",
-                sec_title: "Безопасность и Прозрачность",
-                sec_verified: "✓ Контракт Верифицирован",
-                sec_arch: "📄 Архитектура",
-                sec_arch_desc: "Технический Whitepaper",
-                sec_stress: "⚡ Стресс-Тест",
-                sec_stress_desc: "Отчет Аудита",
-                faq_title: "Частые Вопросы",
-                faq_q1: "Безопасны ли мои средства?",
-                faq_a1: "Да. Контракт использует проверенный стандарт OpenZeppelin ERC-4626. Админ-ключи на холодном кошельке. Бот имеет право только ребалансировать активы, без прав на вывод.",
-                pls_connect: "Подключите кошелек для работы"
-            },
-            zh: {
-                connect_wallet: "连接钱包",
-                protocol_status: "协议状态",
-                delta_neutral: "Delta 中性",
-                target_apr: "目标 APR",
-                total_tvl: "总 TVL",
-                strategy: "策略",
-                strategy_desc: "Aave V3 空头 + Uni V3 CL",
-                network: "网络",
-                lm_live: "✨ 流动性挖矿已开启！",
-                lm_desc: "存入 USDC 自动赚取",
-                lm_pts: "积分。",
-                vault_interface: "金库界面",
-                your_balance: "您的 USDC 余额",
-                tab_deposit: "存入",
-                tab_withdraw: "提取",
-                amount_label: "金额 (USDC)",
-                btn_approve: "授权并存入",
-                btn_withdraw: "提取",
-                roi_title: "收益预测",
-                roi_desc: "根据动态 APR (预估 80%) 计算您的预期收益。",
-                invest_amount: "投资金额 ($)",
-                monthly_yield: "月化收益",
-                yearly_yield: "年化收益",
-                benchmark_title: "为什么选择 ALM Vault?",
-                strategy_col: "策略",
-                apr_col: "预期 APY",
-                risk_col: "风险状况",
-                sec_title: "安全与透明",
-                sec_verified: "✓ 合约已验证",
-                sec_arch: "📄 架构设计",
-                sec_arch_desc: "技术白皮书",
-                sec_stress: "⚡ 压力测试",
-                sec_stress_desc: "性能审计报告",
-                faq_title: "常见问题",
-                faq_q1: "我的资金安全吗？",
-                faq_a1: "是的。合约继承了经过全面审计的 OpenZeppelin ERC-4626 标准。管理员密钥存放在冷钱包中。Keeper 机器人只能执行再平衡操作，没有任何提取用户资金的权限。",
-                pls_connect: "请连接钱包"
             }
         };
 
@@ -470,10 +387,7 @@
             document.querySelectorAll("[data-i18n]").forEach(el => {
                 const key = el.getAttribute("data-i18n");
                 if (translations[lang] && translations[lang][key]) {
-                    // We only want to replace the text content, keeping internal HTML if any
-                    // But in our case all data-i18n tags are purely text wrappers
                     if (el.tagName === "BUTTON" && el.id === "connectWalletBtn") {
-                        // Preserve the button logic text if it's already an address
                         if (!el.innerText.includes("0x")) {
                             el.innerText = translations[lang][key];
                         }
@@ -484,7 +398,6 @@
                     }
                 }
             });
-            document.getElementById('langSelect').value = lang;
         }
 
         // Init language
@@ -518,6 +431,7 @@
         const VAULT_ABI = [
             "function totalAssets() view returns (uint256)",
             "function netTotalDeposit() view returns (uint256)",
+            "function cachedUniV3ValueUSD() view returns (uint256)",
             "function deposit(uint256 assets, address receiver) returns (uint256 shares)",
             "function withdraw(uint256 assets, address receiver, address owner) returns (uint256 shares)",
             "function maxWithdraw(address owner) view returns (uint256)",
@@ -562,14 +476,18 @@
                 
                 const netDep = await vaultContract.netTotalDeposit();
                 const accountData = await aavePool.getUserAccountData(VAULT_ADDRESS);
+                const cachedUni = await vaultContract.cachedUniV3ValueUSD();
                 
                 const netDepUsd = parseFloat(ethers.formatUnits(netDep, 6));
                 const colBaseUsd = parseFloat(ethers.formatUnits(accountData[0], 8));
+                const uniUsd = parseFloat(ethers.formatUnits(cachedUni, 6));
                 
-                let ratio = 160.0; // Default aesthetic
+                let ratio = 100.0;
                 if (netDepUsd > 0) {
-                    ratio = (colBaseUsd / netDepUsd) * 100;
+                    ratio = ((colBaseUsd + uniUsd) / netDepUsd) * 100;
                 }
+                
+                console.log(`[Solvency Math] netDepUsd: ${netDepUsd}, colBaseUsd(Aave): ${colBaseUsd}, uniUsd: ${uniUsd}, ratio: ${ratio}`);
                 
                 const solDisp = document.getElementById('solvencyDisplay');
                 if (solDisp) solDisp.innerText = `${ratio.toFixed(1)}%`;

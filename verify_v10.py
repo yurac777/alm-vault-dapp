@@ -19,7 +19,7 @@ if not standard_json:
     print("Could not find standard JSON input.")
     exit(1)
 
-source_code = json.dumps(standard_json)
+source_code = "{{" + json.dumps(standard_json)[1:-1] + "}}"
 
 url = "https://api.etherscan.io/v2/api"
 BASESCAN_KEY = "119KN47TI7YNX97TJZYXXI413ZPR7IVWXF"
@@ -32,7 +32,7 @@ data = {
     "contractaddress": vault_address,
     "sourceCode":      source_code,
     "codeformat":      "3",  # 3 = Standard JSON
-    "contractname":    "src/ALMVault.sol:ALMVault",
+    "contractname":    "src/ALMVaultV10.sol:ALMVaultV10",
     "compilerversion": "v0.8.24+commit.e11b9ed9",
     "optimizationUsed": "1",
     "runs": "200"
