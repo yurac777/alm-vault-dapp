@@ -503,12 +503,12 @@
         async function connectWallet() {
             if (typeof window.ethereum === 'undefined') {
                 showStatus("MetaMask is not installed!", "text-red-500");
-                return;
+                return false;
             }
 
             try {
-                provider = new ethers.BrowserProvider(window.ethereum);
-                const network = await provider.getNetwork();
+                const tempProvider = new ethers.BrowserProvider(window.ethereum);
+                const network = await tempProvider.getNetwork();
                 
                 if (Number(network.chainId) !== BASE_CHAIN_ID) {
                     try {
@@ -532,16 +532,18 @@
                             } catch (addError) {
                                 console.error("Failed to add network:", addError);
                                 showStatus("Failed to add Base network.", "text-red-500");
-                                return;
+                                return false;
                             }
                         } else {
                             console.error("Failed to switch network:", switchError);
                             showStatus("Please switch to Base Mainnet.", "text-red-500");
-                            return;
+                            return false;
                         }
                     }
+                    // After successful switch, recreate provider
                 }
 
+                provider = new ethers.BrowserProvider(window.ethereum);
                 await provider.send("eth_requestAccounts", []);
                 signer = await provider.getSigner();
                 userAddress = await signer.getAddress();
@@ -554,13 +556,27 @@
                 setTimeout(() => overlay.style.display = 'none', 300);
 
                 await updateUserBalance();
-                
-                window.ethereum.on('accountsChanged', () => window.location.reload());
-                window.ethereum.on('chainChanged', () => window.location.reload());
+                await updateNetworkUI();
+                return true;
 
             } catch (error) {
                 console.error("Connection error:", error);
                 showStatus("Failed to connect wallet.", "text-red-500");
+                return false;
+            }
+        }
+        
+        async function updateNetworkUI() {
+            if (typeof window.ethereum !== 'undefined') {
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                if (parseInt(chainId, 16) !== BASE_CHAIN_ID) {
+                    actionBtn.disabled = true;
+                    actionBtn.innerHTML = `<span>Switch to Base Network</span>`;
+                } else {
+                    actionBtn.disabled = false;
+                    const curLang = localStorage.getItem("almVaultLang") || "en";
+                    actionBtn.innerHTML = `<span>${translations[curLang][currentMode === 'deposit' ? 'btn_approve' : 'btn_withdraw']}</span>`;
+                }
             }
         }
 
@@ -594,7 +610,6 @@
                 tabDeposit.classList.replace('text-slate-500', 'text-white');
                 tabWithdraw.classList.replace('border-primary', 'border-transparent');
                 tabWithdraw.classList.replace('text-white', 'text-slate-500');
-                actionBtn.innerHTML = `<span>${translations[curLang]['btn_approve']}</span>`;
                 const yb = document.querySelector('[data-i18n="your_balance"]');
                 if(yb) yb.innerText = translations[curLang]['your_balance'] || "Your USDC Balance";
             } else {
@@ -602,10 +617,10 @@
                 tabWithdraw.classList.replace('text-slate-500', 'text-white');
                 tabDeposit.classList.replace('border-primary', 'border-transparent');
                 tabDeposit.classList.replace('text-white', 'text-slate-500');
-                actionBtn.innerHTML = `<span>${translations[curLang]['btn_withdraw']}</span>`;
                 const yb = document.querySelector('[data-i18n="your_balance"]');
                 if(yb) yb.innerText = translations[curLang]['issued_almusd'] || "Your Issued almUSD";
             }
+            updateNetworkUI();
         }
 
         function showStatus(msg, colorClass = "text-slate-400") {
@@ -651,7 +666,18 @@
         }
 
         async function handleAction() {
-            if (!signer) return;
+            if (typeof window.ethereum !== 'undefined') {
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                if (parseInt(chainId, 16) !== BASE_CHAIN_ID) {
+                    await connectWallet();
+                    return;
+                }
+            }
+            if (!signer) {
+                const connected = await connectWallet();
+                if (!connected) return;
+            }
+            
             const amountStr = amountInput.value;
             if (!amountStr || isNaN(amountStr) || Number(amountStr) <= 0) {
                 showStatus("Please enter a valid amount.", "text-red-500");
@@ -706,6 +732,14 @@
         actionBtn.addEventListener('click', handleAction);
 
         fetchTVL();
+        updateNetworkUI();
+        if (typeof window.ethereum !== 'undefined') {
+            window.ethereum.on('chainChanged', () => {
+                updateNetworkUI();
+                if (signer) window.location.reload();
+            });
+            window.ethereum.on('accountsChanged', () => window.location.reload());
+        }
 
         // --- $vALM Points Animation ---
         let points = parseFloat(localStorage.getItem('valmPoints') || '0');
