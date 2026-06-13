@@ -6,7 +6,7 @@ node_modules/
 out/
 cache/
 __pycache__/
-keeper.log
-daemon.err
-history_log.csv
+*.log
+*.err
+*.csv
 .DS_Store
