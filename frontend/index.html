@@ -3,7 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALM Vault V3 | Delta-Neutral Yield</title>
+    <title>ALM Quant Vault | Automated Delta-Neutral USDC Yield on Base</title>
+    <meta name="description" content="Maximize your USDC yield on Base network with zero market risk. Automated delta-neutral LP strategy powered by Uniswap V3, Aave V3, and off-chain AI-Keeper.">
+    <!-- OpenGraph Tags -->
+    <meta property="og:title" content="ALM Quant Vault | Automated Delta-Neutral USDC Yield on Base">
+    <meta property="og:description" content="Maximize your USDC yield on Base network with zero market risk. Automated delta-neutral LP strategy powered by Uniswap V3, Aave V3, and off-chain AI-Keeper.">
+    <meta property="og:image" content="https://alm-quant.xyz/og-image.jpg">
+    <meta property="og:url" content="https://alm-quant.xyz">
+    <meta property="og:type" content="website">
+    <!-- Twitter Card Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="ALM Quant Vault | Automated Delta-Neutral USDC Yield on Base">
+    <meta name="twitter:description" content="Maximize your USDC yield on Base network with zero market risk. Automated delta-neutral LP strategy powered by Uniswap V3, Aave V3, and off-chain AI-Keeper.">
+    <meta name="twitter:image" content="https://alm-quant.xyz/og-image.jpg">
     <!-- TailwindCSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -246,8 +258,28 @@
                             params: [{ chainId: ethers.toBeHex(BASE_CHAIN_ID) }],
                         });
                     } catch (switchError) {
-                        showStatus("Please switch to Base Mainnet.", "text-red-500");
-                        return;
+                        if (switchError.code === 4902) {
+                            try {
+                                await window.ethereum.request({
+                                    method: 'wallet_addEthereumChain',
+                                    params: [{
+                                        chainId: ethers.toBeHex(BASE_CHAIN_ID),
+                                        chainName: 'Base',
+                                        nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                                        rpcUrls: ['https://mainnet.base.org'],
+                                        blockExplorerUrls: ['https://basescan.org']
+                                    }]
+                                });
+                            } catch (addError) {
+                                console.error("Failed to add network:", addError);
+                                showStatus("Failed to add Base network.", "text-red-500");
+                                return;
+                            }
+                        } else {
+                            console.error("Failed to switch network:", switchError);
+                            showStatus("Please switch to Base Mainnet.", "text-red-500");
+                            return;
+                        }
                     }
                 }
 
