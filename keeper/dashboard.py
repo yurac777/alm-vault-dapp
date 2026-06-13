@@ -234,11 +234,11 @@ def main():
         apr = 0.0
 
     # ── Display ───────────────────────────────────────────────────────────────
-    sep = "─" * 44
+    sep = "-" * 44
     print(f"\n{'='*44}")
     print(f"  ALM Vault V3 Dashboard  |  ETH=${eth_price:.2f}")
     print(f"{'='*44}")
-    print(f"  Vault:          {vault_addr[:20]}…")
+    print(f"  Vault:          {vault_addr[:20]}...")
     print(sep)
     print(f"  {'Total TVL':20} ${tvl:>10.4f}")
     print(sep)

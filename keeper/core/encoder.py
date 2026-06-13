@@ -16,13 +16,15 @@ def encode_rebalance_payload_v3(
     poolFee: int = 500,
     amountWETHToRepay: int = 0,
     amountUSDCToWithdraw: int = 0,
+    amount0Min: int = 0,
+    amount1Min: int = 0,
 ) -> str:
     """
     Encodes the calldata ``bytes`` parameter for ``ALMVaultV3.rebalance()``.
 
     Solidity signature (decoded order):
         (bool, int256, uint256, uint256, int24, int24,
-         uint256, uint256, uint24, uint256, uint256)
+         uint256, uint256, uint24, uint256, uint256, uint256, uint256)
     """
     types = [
         "bool",    # isRebalance
@@ -36,6 +38,8 @@ def encode_rebalance_payload_v3(
         "uint24",  # poolFee
         "uint256", # amountWETHToRepay
         "uint256", # amountUSDCToWithdraw
+        "uint256", # amount0Min
+        "uint256", # amount1Min
     ]
     values = [
         isRebalance,
@@ -49,5 +53,7 @@ def encode_rebalance_payload_v3(
         poolFee,
         amountWETHToRepay,
         amountUSDCToWithdraw,
+        amount0Min,
+        amount1Min,
     ]
     return "0x" + encode(types, values).hex()

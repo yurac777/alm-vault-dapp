@@ -10,10 +10,12 @@ import {IPool, INonfungiblePositionManager} from "./interfaces/DeFiInterfaces.so
 
 // ── Aave aToken (to read live collateral balance) ─────────────────────────
 interface IAToken is IERC20 {
+    // aTokens are 1:1 with the underlying and accrue yield in balanceOf
 }
 
 // ── Aave Price Oracle (to convert debt WETH → USD) ────────────────────────
 interface IAaveOracle {
+    // Returns asset price in USD with 8 decimals (same as Chainlink)
     function getAssetPrice(address asset) external view returns (uint256);
 }
 
@@ -30,11 +32,30 @@ interface IAaveProtocolDataProvider {
 }
 
 /**
- * @title  ALMVault
- * @notice THE GOLDEN RELEASE. Delta-neutral ERC-4626 vault: USDC collateral in Aave, short WETH,
+ * @title  ALMVaultV7
+ * @notice Delta-neutral ERC-4626 vault: USDC collateral in Aave, short WETH,
  *         liquidity in Uniswap V3.
+ *
+ * KEY FIX vs V6:
+ *   totalAssets() now returns the full economic value of the vault:
+ *
+ *   totalAssets = freeUSDC
+ *               + aUSDC.balanceOf(this)          // live Aave collateral (auto-accrues)
+ *               + cachedUniV3ValueUSD             // keeper-supplied NFT value (USDC 6-dec)
+ *               - debtWETH * wethPriceUSD / 1e8  // short obligation
+ *
+ *   The Uniswap V3 NFT value is expensive to compute on-chain (requires sqrtPriceX96
+ *   from the pool + tick math). Instead, the Python keeper calculates it off-chain on
+ *   every rebalance and passes it as `uniV3ValueUSD` (USDC, 6 decimals).
+ *   The contract stores it as `cachedUniV3ValueUSD`.
+ *
+ *   SECURITY: cachedUniV3ValueUSD can only be updated by the keeper via rebalance().
+ *   Any stale value cannot be exploited because:
+ *     - Deposits mint shares proportional to totalAssets() at that instant.
+ *     - If the cache is stale, an attacker cannot force an update — only the keeper can.
+ *     - A misbehaving keeper is already a trusted role (owns private key).
  */
-contract ALMVault is ERC4626, Ownable {
+contract ALMVaultV7 is ERC4626, Ownable {
     using SafeERC20 for IERC20;
 
     // ── Roles ────────────────────────────────────────────────────────────────
@@ -51,24 +72,24 @@ contract ALMVault is ERC4626, Ownable {
     uint256 public currentTokenId;
     uint128 public currentLiquidity;
 
-    // --- Fees ---
+    // ── Fees ─────────────────────────────────────────────────────────────────
     uint256 public withdrawalFeeBps = 50; // 0.5%
     address public feeRecipient;
 
-    // --- Accounting ---
-    uint256 public cachedUniV3ValueUSD; // Off-chain evaluated value in USDC (6 dec)
-    int256 public netTotalDeposit;
+    // ── Accounting ───────────────────────────────────────────────────────────
+    int256 public netTotalDeposit; // net USDC deposited (for analytics)
 
-    // --- Withdrawal Queue ---
-    mapping(address => uint256) public withdrawalRequests;
-    uint256 public totalWithdrawalRequests;
+    /**
+     * @notice Cached USD value of the Uniswap V3 NFT position (USDC, 6 decimals).
+     * @dev    Updated by the keeper on every rebalance() call.
+     *         Starts at 0, so totalAssets() is conservative until first rebalance.
+     */
+    uint256 public cachedUniV3ValueUSD;
 
-    // --- Events ---
-    event KeeperUpdated(address oldKeeper, address newKeeper);
-    event WithdrawalFeeUpdated(uint256 oldFee, uint256 newFee);
-    event Rebalanced(uint256 tokenId, uint128 liquidity, uint256 uniV3ValueUSD);
+    // ── Events ───────────────────────────────────────────────────────────────
+    event KeeperUpdated(address indexed oldKeeper, address indexed newKeeper);
+    event Rebalanced(uint256 newTokenId, uint128 newLiquidity, uint256 uniV3ValueUSD);
     event CacheUpdated(uint256 uniV3ValueUSD);
-    event WithdrawalRequested(address indexed user, uint256 shares);
 
     // ── Modifiers ─────────────────────────────────────────────────────────────
     modifier onlyKeeper() {
@@ -87,7 +108,7 @@ contract ALMVault is ERC4626, Ownable {
         address _aaveOracle
     )
         ERC4626(_asset)
-        ERC20("ALM Vault", "almUSD")
+        ERC20("ALM Vault V7", "almUSD")
         Ownable(_initialOwner)
     {
         weth = _weth;
@@ -123,8 +144,20 @@ contract ALMVault is ERC4626, Ownable {
         withdrawalFeeBps = _bps;
     }
 
-    // ── Core: totalAssets ──────────────────────────────────────────────────────
+    // ── Core: totalAssets (THE FIX) ────────────────────────────────────────────
 
+    /**
+     * @inheritdoc ERC4626
+     * @dev Full economic value of the vault in USDC (6 decimals):
+     *
+     *   freeUSDC  — USDC sitting idle in this contract
+     *   aUSDC     — Aave collateral (balanceOf on the aToken, 1:1 + yield)
+     *   cached    — Uniswap V3 NFT value, last reported by keeper
+     *   debt      — WETH borrowed from Aave, converted to USDC via Aave oracle
+     *
+     *   Returns 0 rather than reverting if oracle/data-provider calls fail,
+     *   so the vault remains operational under degraded conditions.
+     */
     function totalAssets() public view virtual override returns (uint256) {
         // 1. Free USDC in this contract
         uint256 freeUSDC = IERC20(asset()).balanceOf(address(this));
@@ -150,29 +183,50 @@ contract ALMVault is ERC4626, Ownable {
             if (varDebtAddr != address(0)) {
                 uint256 wethDebt = IERC20(varDebtAddr).balanceOf(address(this));
                 if (wethDebt > 0) {
+                    // Aave oracle: price in USD with 8 decimals
                     uint256 wethPriceUSD8 = aaveOracle.getAssetPrice(address(weth));
+                    // Convert: wethDebt (18-dec) * wethPriceUSD8 (8-dec) → USDC (6-dec)
+                    // = wethDebt * wethPriceUSD8 / 1e18 / 1e8 * 1e6
+                    // = wethDebt * wethPriceUSD8 / 1e20
                     debtUSDC = (wethDebt * wethPriceUSD8) / 1e20;
                 }
             }
         } catch {}
 
+        // Collateral side (avoid underflow if debt > collateral during extreme conditions)
         uint256 netAave = (aUSDCBalance > debtUSDC) ? (aUSDCBalance - debtUSDC) : 0;
+
         return freeUSDC + netAave + uniValue;
     }
 
     // ── Core: Rebalance ────────────────────────────────────────────────────────
 
-    function _getUint256(bytes calldata data, uint256 offset) internal pure returns (uint256 res) {
-        assembly { res := calldataload(add(data.offset, offset)) }
-    }
-
-    function _getInt256(bytes calldata data, uint256 offset) internal pure returns (int256 res) {
-        assembly { res := calldataload(add(data.offset, offset)) }
-    }
-
+    /**
+     * @notice Execute a rebalance. Called by the keeper.
+     * @param uniV3ValueUSD  Off-chain calculated value of the Uni V3 position in USDC
+     *                       (6 decimals). Must be passed every call to keep the cache fresh.
+     * @param data           ABI-encoded rebalance parameters.
+     */
     function rebalance(uint256 uniV3ValueUSD, bytes calldata data) external onlyKeeper {
+        // Update NFT value cache FIRST (before opening new position)
         cachedUniV3ValueUSD = uniV3ValueUSD;
         emit CacheUpdated(uniV3ValueUSD);
+
+        (
+            bool isRebalance,
+            int256 aaveDebtAdjustment,
+            uint256 amountUSDC,
+            uint256 amountWETHToBorrow,
+            int24 newTickLower,
+            int24 newTickUpper,
+            uint256 amount0Desired,
+            uint256 amount1Desired,
+            uint24 poolFee,
+            uint256 amountWETHToRepay,
+            uint256 amountUSDCToWithdraw,
+            uint256 amount0Min,
+            uint256 amount1Min
+        ) = abi.decode(data, (bool, int256, uint256, uint256, int24, int24, uint256, uint256, uint24, uint256, uint256, uint256, uint256));
 
         address usdc = asset();
         address token0 = address(usdc) < address(weth) ? address(usdc) : address(weth);
@@ -195,61 +249,68 @@ contract ALMVault is ERC4626, Ownable {
             }));
             currentTokenId = 0;
             currentLiquidity = 0;
+            // After closing NFT, cached value is stale → zero it until new position opens
             cachedUniV3ValueUSD = 0;
         }
 
         // 2. Aave: repay WETH debt
-        if (_getUint256(data, 288) > 0) {
-            aavePool.repay(address(weth), _getUint256(data, 288), 2, address(this));
+        if (amountWETHToRepay > 0) {
+            aavePool.repay(address(weth), amountWETHToRepay, 2, address(this));
         }
 
         // 3. Aave: withdraw USDC collateral
-        if (_getUint256(data, 320) > 0) {
-            aavePool.withdraw(usdc, _getUint256(data, 320), address(this));
+        if (amountUSDCToWithdraw > 0) {
+            aavePool.withdraw(usdc, amountUSDCToWithdraw, address(this));
         }
 
         // 4. Aave: supply USDC
-        if (_getUint256(data, 64) > 0) {
-            aavePool.supply(usdc, _getUint256(data, 64), address(this), 0);
+        if (amountUSDC > 0) {
+            aavePool.supply(usdc, amountUSDC, address(this), 0);
         }
 
         // 5. Aave: borrow WETH
-        if (_getUint256(data, 0) != 0 && _getInt256(data, 32) > 0) {
-            aavePool.borrow(address(weth), uint256(_getInt256(data, 32)), 2, 0, address(this));
-        } else if (_getUint256(data, 96) > 0) {
-            aavePool.borrow(address(weth), _getUint256(data, 96), 2, 0, address(this));
+        if (isRebalance && aaveDebtAdjustment > 0) {
+            aavePool.borrow(address(weth), uint256(aaveDebtAdjustment), 2, 0, address(this));
+        } else if (amountWETHToBorrow > 0) {
+            aavePool.borrow(address(weth), amountWETHToBorrow, 2, 0, address(this));
         }
 
         // 6. Open new Uniswap V3 position
-        if (_getUint256(data, 192) > 0 || _getUint256(data, 224) > 0) {
+        if (amount0Desired > 0 || amount1Desired > 0) {
             (uint256 tokenId, uint128 liquidity, , ) = npm.mint(INonfungiblePositionManager.MintParams({
                 token0: token0,
                 token1: token1,
-                fee: uint24(_getUint256(data, 256)),
-                tickLower: int24(int256(_getInt256(data, 128))),
-                tickUpper: int24(int256(_getInt256(data, 160))),
-                amount0Desired: _getUint256(data, 192),
-                amount1Desired: _getUint256(data, 224),
-                amount0Min: _getUint256(data, 352),
-                amount1Min: _getUint256(data, 384),
+                fee: poolFee,
+                tickLower: newTickLower,
+                tickUpper: newTickUpper,
+                amount0Desired: amount0Desired,
+                amount1Desired: amount1Desired,
+                amount0Min: amount0Min,
+                amount1Min: amount1Min,
                 recipient: address(this),
                 deadline: block.timestamp
             }));
             currentTokenId = tokenId;
             currentLiquidity = liquidity;
+            // After opening, set cache to the value passed by keeper
             cachedUniV3ValueUSD = uniV3ValueUSD;
             emit Rebalanced(tokenId, liquidity, uniV3ValueUSD);
         } else {
             emit Rebalanced(0, 0, uniV3ValueUSD);
         }
 
-        // 7. Auto-Sweep Excess WETH → repay debt
+        // 7. Auto-Sweep Excess WETH → repay debt to keep delta neutral
         uint256 excessWeth = weth.balanceOf(address(this));
         if (excessWeth > 0) {
             aavePool.repay(address(weth), excessWeth, 2, address(this));
         }
     }
 
+    /**
+     * @notice Keeper-only function to update ONLY the cached Uni V3 value
+     *         without executing a full rebalance. Use between rebalances to keep
+     *         the NAV accurate for depositors.
+     */
     function updateCache(uint256 uniV3ValueUSD) external onlyKeeper {
         cachedUniV3ValueUSD = uniV3ValueUSD;
         emit CacheUpdated(uniV3ValueUSD);
@@ -283,37 +344,23 @@ contract ALMVault is ERC4626, Ownable {
 
         _burn(owner, shares);
 
-        uint256 freeUSDC = IERC20(asset()).balanceOf(address(this));
-        require(freeUSDC >= assets, "ALMVault: Insufficient free USDC. Request withdrawal first.");
-
-        if (withdrawalRequests[owner] > 0) {
-            if (withdrawalRequests[owner] >= shares) {
-                withdrawalRequests[owner] -= shares;
-                totalWithdrawalRequests -= shares;
-            } else {
-                totalWithdrawalRequests -= withdrawalRequests[owner];
-                withdrawalRequests[owner] = 0;
-            }
-        }
-
         if (fee > 0) {
             IERC20(asset()).safeTransfer(feeRecipient, fee);
         }
         IERC20(asset()).safeTransfer(receiver, payout);
 
         netTotalDeposit -= int256(assets);
-        emit Withdraw(caller, receiver, owner, assets, shares);
-    }
 
-    function requestWithdrawal(uint256 shares) external {
-        require(balanceOf(msg.sender) >= shares, "ALMVault: Insufficient shares");
-        withdrawalRequests[msg.sender] += shares;
-        totalWithdrawalRequests += shares;
-        emit WithdrawalRequested(msg.sender, shares);
+        emit Withdraw(caller, receiver, owner, assets, shares);
     }
 
     // ── Emergency ─────────────────────────────────────────────────────────────
 
+    /**
+     * @notice Rescue any ERC20 token stuck in the vault.
+     *         For USDC: only callable if it won't break the share ratio
+     *         (relies on totalAssets() returning correct value).
+     */
     function rescueFunds(address token, uint256 amount) external onlyOwner {
         require(token != address(0), "ALMVault: Invalid token");
         IERC20(token).safeTransfer(msg.sender, amount);

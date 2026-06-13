@@ -1,0 +1,14 @@
+﻿.\foundry_bin\forge.exe : Warning: This is a nightly build of Foundry. It is recommended to use the latest stable versi
+on. To mute this warning set `FOUNDRY_DISABLE_NIGHTLY_WARNING` in your environment. 
+строка:1 знак:1
++ .\foundry_bin\forge.exe verify-contract --show-standard-json-input 0x ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Warning: This i...r environment. :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+Error: error decoding response body
+
+Context:
+- Error #0: error reading a body from connection
+- Error #1: connection reset

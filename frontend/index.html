@@ -501,7 +501,7 @@
 
 
         // --- Web3 Logic (Regression Shield Active) ---
-        const VAULT_ADDRESS = "0x87eE1eCa84E9308946eEcba998625272A6ED9a00";
+        const VAULT_ADDRESS = "0x6B2Ec85Fb2c4CE051B71804e20aD8F2c03DADcB4";
         const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
         const BASE_CHAIN_ID = 8453;
         const PUBLIC_RPC = "https://mainnet.base.org";
@@ -683,6 +683,33 @@
         function showStatus(msg, colorClass = "text-slate-400") {
             statusMsg.className = `text-sm text-center min-h-[20px] font-mono mt-4 ${colorClass}`;
             statusMsg.innerText = msg;
+            
+            // Also show a toast alert for loud errors/success
+            const isError = colorClass.includes('red');
+            const isSuccess = colorClass.includes('accent') || colorClass.includes('green');
+            
+            if (isError || isSuccess) {
+                const toast = document.createElement('div');
+                toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-xl shadow-2xl transition-all transform duration-300 translate-y-[-100%] opacity-0 border ${isError ? 'bg-red-900/90 border-red-500/50 text-white' : 'bg-green-900/90 border-green-500/50 text-white'} flex items-center space-x-3`;
+                toast.innerHTML = `
+                    <span class="text-xl">${isError ? '⚠️' : '✅'}</span>
+                    <span class="font-medium font-sans">${msg}</span>
+                `;
+                document.body.appendChild(toast);
+                
+                // Animate in
+                setTimeout(() => {
+                    toast.classList.remove('translate-y-[-100%]', 'opacity-0');
+                    toast.classList.add('translate-y-0', 'opacity-100');
+                }, 10);
+                
+                // Animate out and remove
+                setTimeout(() => {
+                    toast.classList.remove('translate-y-0', 'opacity-100');
+                    toast.classList.add('translate-y-[-100%]', 'opacity-0');
+                    setTimeout(() => toast.remove(), 300);
+                }, 4000);
+            }
         }
 
         function setLoading(isLoading) {

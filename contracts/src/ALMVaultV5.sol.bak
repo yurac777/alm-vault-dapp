@@ -8,7 +8,7 @@ import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {IPool, INonfungiblePositionManager} from "./interfaces/DeFiInterfaces.sol";
 
-contract ALMVaultV3 is ERC4626, Ownable {
+contract ALMVaultV5 is ERC4626, Ownable {
     using SafeERC20 for IERC20;
     
     address public keeper;
@@ -34,7 +34,7 @@ contract ALMVaultV3 is ERC4626, Ownable {
 
     constructor(IERC20 _asset, IERC20 _weth, address _initialOwner, address _aavePool, address _npm)
         ERC4626(_asset)
-        ERC20("ALM Vault V3", "ALMv3")
+        ERC20("ALM Vault V5", "almUSD")
         Ownable(_initialOwner)
     {
         weth = _weth;
@@ -70,8 +70,10 @@ contract ALMVaultV3 is ERC4626, Ownable {
             uint256 amount1Desired,
             uint24 poolFee,
             uint256 amountWETHToRepay,
-            uint256 amountUSDCToWithdraw
-        ) = abi.decode(data, (bool, int256, uint256, uint256, int24, int24, uint256, uint256, uint24, uint256, uint256));
+            uint256 amountUSDCToWithdraw,
+            uint256 amount0Min,
+            uint256 amount1Min
+        ) = abi.decode(data, (bool, int256, uint256, uint256, int24, int24, uint256, uint256, uint24, uint256, uint256, uint256, uint256));
 
         address usdc = asset();
         address token0 = address(usdc) < address(weth) ? address(usdc) : address(weth);
@@ -128,8 +130,8 @@ contract ALMVaultV3 is ERC4626, Ownable {
                 tickUpper: newTickUpper,
                 amount0Desired: amount0Desired,
                 amount1Desired: amount1Desired,
-                amount0Min: 0,
-                amount1Min: 0,
+                amount0Min: amount0Min,
+                amount1Min: amount1Min,
                 recipient: address(this),
                 deadline: block.timestamp
             }));

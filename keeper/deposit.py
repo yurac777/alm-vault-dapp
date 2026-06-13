@@ -59,7 +59,7 @@ def main():
         })
         approve_tx["gas"] = int(w3.eth.estimate_gas(approve_tx) * 1.2)
         signed_approve = w3.eth.account.sign_transaction(approve_tx, PRIV_KEY)
-        tx_hash_approve = w3.eth.send_raw_transaction(signed_approve.raw_transaction)
+        tx_hash_approve = w3.eth.send_raw_transaction(signed_approve.rawTransaction)
         print(f"Approve Tx Hash: {tx_hash_approve.hex()}")
         w3.eth.wait_for_transaction_receipt(tx_hash_approve)
         nonce += 1
@@ -78,7 +78,7 @@ def main():
     
     deposit_tx["gas"] = int(w3.eth.estimate_gas(deposit_tx) * 1.2)
     signed_deposit = w3.eth.account.sign_transaction(deposit_tx, PRIV_KEY)
-    tx_hash_deposit = w3.eth.send_raw_transaction(signed_deposit.raw_transaction)
+    tx_hash_deposit = w3.eth.send_raw_transaction(signed_deposit.rawTransaction)
     print(f"Deposit Tx Hash: {tx_hash_deposit.hex()}")
     
     print("Waiting for confirmation...")

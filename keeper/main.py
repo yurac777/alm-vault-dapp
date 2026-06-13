@@ -43,7 +43,10 @@ logger = logging.getLogger("KeeperMain")
 # ── ABIs ────────────────────────────────────────────────────────────────────
 VAULT_ABI = [
     {
-        "inputs": [{"internalType": "bytes", "name": "data", "type": "bytes"}],
+        "inputs": [
+            {"internalType": "uint256", "name": "uniV3ValueUSD", "type": "uint256"},
+            {"internalType": "bytes", "name": "data", "type": "bytes"}
+        ],
         "name": "rebalance",
         "outputs": [],
         "stateMutability": "nonpayable",
@@ -59,6 +62,41 @@ VAULT_ABI = [
     {
         "inputs": [],
         "name": "currentTokenId",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [],
+        "name": "totalWithdrawalRequests",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [],
+        "name": "totalAssets",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [],
+        "name": "totalSupply",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [{"internalType": "uint256", "name": "uniV3ValueUSD", "type": "uint256"}],
+        "name": "updateCache",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
+    {
+        "inputs": [],
+        "name": "cachedUniV3ValueUSD",
         "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
         "stateMutability": "view",
         "type": "function",
@@ -319,28 +357,83 @@ def main():
             aave_debt_adj       = 0
             need_transaction    = False
 
+            # --- Withdrawal Queue & Proportional Deleverage ---
+            try:
+                total_withdrawal_requests = vault_contract.functions.totalWithdrawalRequests().call()
+            except Exception as e:
+                logger.error(f"[Withdrawal Queue] Could not read totalWithdrawalRequests: {e}")
+                total_withdrawal_requests = 0
+
+            required_usdc_human = 0.0
+            if total_withdrawal_requests > 0:
+                try:
+                    total_assets = vault_contract.functions.totalAssets().call()
+                    if total_assets < 10:
+                        pass
+                    total_shares = vault_contract.functions.totalSupply().call()
+                    if total_shares > 0:
+                        required_usdc_wei = (total_withdrawal_requests * total_assets) // total_shares
+                        required_usdc_human = required_usdc_wei / 1e6
+                        logger.info(f"[Withdrawal Queue] Pending requests ({total_withdrawal_requests/1e18:.4f} shares) require {required_usdc_human:.4f} USDC.")
+                except Exception as e:
+                    logger.error(f"[Withdrawal Queue] Calculation error: {e}")
+
             if current_liquidity == 0:
                 logger.info("[SRE] Position empty — Initial Open.")
                 if total_usdc_wei == 0:
                     logger.warning("Vault is empty. Halting.")
                     break
                 total_usdc_human    = float(total_usdc_wei) / 1e6
-                amount_usdc_to_aave = total_usdc_human / (1 + 0.80 / float(current_target_hf))
-                amount_weth_borrow  = (total_usdc_human - amount_usdc_to_aave) / float(eth_price)
+                # Subtract required withdrawal from usable capital
+                usable_capital      = max(0.0, total_usdc_human - required_usdc_human)
+                if required_usdc_human > 0:
+                    logger.info(f"[Math Engine] Usable Capital (after withdrawals): ${usable_capital:.4f}")
+                amount_usdc_to_aave = usable_capital / (1 + 0.80 / float(current_target_hf))
+                amount_weth_borrow  = (usable_capital - amount_usdc_to_aave) / float(eth_price)
                 need_transaction    = True
                 action_taken        = "Initial Open"
 
-            elif force_mode:
-                logger.info("[SRE] FORCE mode — forced rebalance.")
+            elif force_mode or total_withdrawal_requests > 0:
+                logger.info("[SRE] FORCE mode or Pending Withdrawals — forced rebalance.")
                 is_rebalance     = True
                 need_transaction = True
-                action_taken     = "Forced Rebalance"
+                action_taken     = "Forced Rebalance (Withdrawal)" if total_withdrawal_requests > 0 else "Forced Rebalance"
 
             else:
                 buf = 20
                 if (old_tick_lower + buf) < current_tick < (old_tick_upper - buf):
                     logger.info("[SRE] Price in-range [%d, %d] — no action.", old_tick_lower, old_tick_upper)
                     action_taken = "Skipped (In-Range)"
+                    
+                    # Anti-Hack Stale Cache Protection: update cache ONLY if deviation > 1.0%
+                    try:
+                        cached_value_wei = vault_contract.functions.cachedUniV3ValueUSD().call()
+                        cached_value_human = cached_value_wei / 1e6
+                        
+                        if cached_value_human > 0:
+                            deviation_pct = abs(nft_value_usd - cached_value_human) / cached_value_human * 100
+                        else:
+                            deviation_pct = 100.0
+                            
+                        logger.info(f"[Smart Cache] Cached: ${cached_value_human:.4f} | Real: ${nft_value_usd:.4f} | Deviation: {deviation_pct:.2f}%")
+                        
+                        if deviation_pct > 1.0:
+                            logger.info(f"[Smart Cache] Deviation > 1%. Updating stale cache.")
+                            uc_tx = vault_contract.functions.updateCache(int(nft_value_usd * 1e6)).build_transaction({
+                                "from": wallet,
+                                "nonce": w3.eth.get_transaction_count(wallet, "pending"),
+                                "maxFeePerGas": gas_params["maxFeePerGas"],
+                                "maxPriorityFeePerGas": gas_params["maxPriorityFeePerGas"],
+                                "gas": 150000,
+                            })
+                            signed_uc = w3.eth.account.sign_transaction(uc_tx, config.PRIVATE_KEY)
+                            uc_hash = w3.eth.send_raw_transaction(signed_uc.rawTransaction)
+                            logger.info(f"[Smart Cache] updateCache Tx Sent: {uc_hash.hex()}")
+                        else:
+                            logger.info(f"[Smart Cache] Deviation <= 1%. Skipping update to save gas.")
+                    except Exception as e:
+                        logger.error(f"[Smart Cache] Failed to check/update cache: {e}")
+                        
                     telegram_reporter.send_message(
                         f"ℹ️ In-range tick={current_tick} [{old_tick_lower},{old_tick_upper}]"
                     )
@@ -358,9 +451,14 @@ def main():
                 if action_taken != "Initial Open":
                     # For Rebalances (Forced or Boundary), compute using virtual total capital
                     virtual_capital_usd = pnl["net_worth"]
+                    # Subtract required withdrawal from usable capital
+                    usable_capital = max(0.0, virtual_capital_usd - required_usdc_human)
                     logger.info(f"[Math Engine] Using Virtual Capital (incl. expected fees): ${virtual_capital_usd:.4f}")
-                    amount_usdc_to_aave = virtual_capital_usd / (1 + 0.80 / float(current_target_hf))
-                    amount_weth_borrow  = (virtual_capital_usd - amount_usdc_to_aave) / float(eth_price)
+                    if required_usdc_human > 0:
+                        logger.info(f"[Math Engine] Usable Capital (after withdrawals): ${usable_capital:.4f}")
+                        
+                    amount_usdc_to_aave = usable_capital / (1 + 0.80 / float(current_target_hf))
+                    amount_weth_borrow  = (usable_capital - amount_usdc_to_aave) / float(eth_price)
 
                 amountUSDC_wei    = int(amount_usdc_to_aave * 1e6)
                 amountWETH_wei    = int(amount_weth_borrow  * 1e18)
@@ -422,9 +520,11 @@ def main():
                 req_weth, req_usdc = get_amounts_for_liquidity(sqrt_px96, new_tick_lower, new_tick_upper, L_raw)
                 
                 # SRE Capital Optimization (95%+ Efficiency)
-                # We need exactly req_usdc and req_weth. We add a 3% cash buffer for slippage during minting.
-                usdc_needed_safe = int(req_usdc * 1.03)
-                weth_needed_safe = int(req_weth * 1.03)
+                dyn_buffer = min(5.0, max(2.0, float(max(tick_down_delta, tick_up_delta)) / 100.0))
+                buf_mult = 1.0 + (dyn_buffer / 100.0)
+                usdc_needed_safe = int(req_usdc * buf_mult)
+                weth_needed_safe = int(req_weth * buf_mult)
+                logger.info(f"[SRE] Dynamic Buffer applied: {dyn_buffer:.2f}%")
                 
                 excess_usdc = usdc_for_uni - usdc_needed_safe
                 if excess_usdc > 0:
@@ -460,6 +560,11 @@ def main():
                 logger.debug("amountUSDC=%d  amountWETH=%d  usdcUni=%d  wethUni=%d  L=%d",
                              amountUSDC_payload, amountWETH_wei, usdc_for_uni, weth_for_uni, L)
 
+                # MEV Slippage Shield: 10% tolerance for V3 nonlinear shifts
+                amount0_min = int(weth_for_uni * 0.90)
+                amount1_min = int(usdc_for_uni * 0.90)
+                logger.info(f"[SRE] MEV Shield Enabled (10% limit). min0={amount0_min}, min1={amount1_min}")
+
                 payload_hex   = encode_rebalance_payload_v3(
                     isRebalance=is_rebalance,
                     aaveDebtAdjustment=aave_debt_adj,
@@ -472,11 +577,13 @@ def main():
                     poolFee=config.POOL_FEE,
                     amountWETHToRepay=abs(aave_debt_adj) if aave_debt_adj < 0 else 0,
                     amountUSDCToWithdraw=amountUSDCToWithdraw_payload,
+                    amount0Min=amount0_min,
+                    amount1Min=amount1_min,
                 )
                 payload_bytes = w3.to_bytes(hexstr=payload_hex)
                 nonce         = w3.eth.get_transaction_count(wallet, "pending")
 
-                rebalance_tx = vault_contract.functions.rebalance(payload_bytes).build_transaction({
+                rebalance_tx = vault_contract.functions.rebalance(int(nft_value_usd * 1e6), payload_bytes).build_transaction({
                     "from":                 wallet,
                     "nonce":                nonce,
                     "maxFeePerGas":         gas_params["maxFeePerGas"],
@@ -501,7 +608,7 @@ def main():
                 for attempt in range(config.MAX_RBF_RETRIES):
                     signed_tx = w3.eth.account.sign_transaction(rebalance_tx, config.PRIVATE_KEY)
                     try:
-                        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+                        tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
                         logger.info("Tx sent: %s", tx_hash.hex())
                         try:
                             receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
@@ -532,7 +639,7 @@ def main():
                         l1_fee_act = int(l1_fee_act, 16)
                     if not l1_fee_act:
                         try:
-                            l1_fee_act = l1_oracle.functions.getL1Fee(signed_tx.raw_transaction).call()
+                            l1_fee_act = l1_oracle.functions.getL1Fee(signed_tx.rawTransaction).call()
                         except Exception:
                             l1_fee_act = 0
                     l1_cost    = float(Decimal(l1_fee_act) / Decimal(10**18)) * float(eth_price)

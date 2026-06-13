@@ -5,7 +5,8 @@ All on-chain addresses and environment-driven constants live here.
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+env_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(env_path)
 
 # ── Environment ─────────────────────────────────────────────────────────────
 RPC_URL       = os.getenv("BASE_MAINNET_RPC", "https://base-mainnet.g.alchemy.com/v2/IvMTCy2p4_jk6PCd5-2Gu")
