@@ -48,9 +48,16 @@
                 </div>
                 <h1 class="text-xl font-bold tracking-tight">ALMVault</h1>
             </div>
-            <button id="connectWalletBtn" class="bg-primary hover:bg-primaryHover text-white px-5 py-2 rounded-lg font-medium transition-all shadow-lg shadow-primary/20">
-                Connect Wallet
-            </button>
+            <div class="flex items-center space-x-3">
+                <select id="langSelect" class="bg-slate-800 border border-slate-700 text-slate-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer transition-colors" onchange="changeLanguage(this.value)">
+                    <option value="en">EN</option>
+                    <option value="ru">RU</option>
+                    <option value="zh">ZH</option>
+                </select>
+                <button id="connectWalletBtn" class="bg-primary hover:bg-primaryHover text-white px-4 py-2 rounded-lg font-medium transition-all shadow-lg shadow-primary/20" data-i18n="connect_wallet">
+                    Connect Wallet
+                </button>
+            </div>
         </div>
     </header>
 
@@ -64,26 +71,26 @@
                 <div class="absolute top-0 right-0 w-32 h-32 bg-primary opacity-5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
                 
                 <div>
-                    <h2 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Protocol Status</h2>
+                    <h2 class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2" data-i18n="protocol_status">Protocol Status</h2>
                     <div class="flex items-baseline space-x-2 mb-6">
-                        <span class="text-4xl font-bold text-white">Delta-Neutral</span>
+                        <span class="text-4xl font-bold text-white" data-i18n="delta_neutral">Delta-Neutral</span>
                     </div>
 
                     <div class="space-y-4">
                         <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-                            <span class="text-slate-400">Target APR</span>
+                            <span class="text-slate-400" data-i18n="target_apr">Target APR</span>
                             <span class="text-accent font-bold text-lg">33% - 180%</span>
                         </div>
                         <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-                            <span class="text-slate-400">Total TVL</span>
+                            <span class="text-slate-400" data-i18n="total_tvl">Total TVL</span>
                             <span id="tvlDisplay" class="font-medium">Loading...</span>
                         </div>
                         <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-                            <span class="text-slate-400">Strategy</span>
-                            <span class="font-medium text-right text-sm">Aave V3 Short + Uni V3 CL</span>
+                            <span class="text-slate-400" data-i18n="strategy">Strategy</span>
+                            <span class="font-medium text-right text-sm" data-i18n="strategy_desc">Aave V3 Short + Uni V3 CL</span>
                         </div>
                         <div class="flex justify-between items-center pb-2">
-                            <span class="text-slate-400">Network</span>
+                            <span class="text-slate-400" data-i18n="network">Network</span>
                             <span class="font-medium text-blue-400 flex items-center">
                                 <span class="w-2 h-2 rounded-full bg-blue-400 mr-2 animate-pulse"></span>
                                 Base Mainnet
@@ -94,8 +101,8 @@
 
                 <div class="mt-8 bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
                     <p class="text-sm text-slate-300">
-                        <span class="text-accent font-semibold">✨ Liquidity Mining is LIVE!</span>
-                        Deposit USDC to automatically start accruing <span class="font-bold text-white">$vALM</span> points.
+                        <span class="text-accent font-semibold" data-i18n="lm_live">✨ Liquidity Mining is LIVE!</span>
+                        <span data-i18n="lm_desc">Deposit USDC to automatically start accruing</span> <span class="font-bold text-white">$vALM</span> <span data-i18n="lm_pts">points.</span>
                     </p>
                 </div>
             </div>
@@ -104,26 +111,26 @@
             <div class="bg-dark rounded-2xl border border-slate-800 p-6 shadow-xl relative">
                 <div id="overlay" class="absolute inset-0 bg-dark/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-2xl transition-opacity">
                     <svg class="w-12 h-12 text-slate-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 9l-6 6m0-6l6 6"></path></svg>
-                    <p class="text-slate-300 font-medium">Please connect wallet to interact</p>
+                    <p class="text-slate-300 font-medium" data-i18n="pls_connect">Please connect wallet to interact</p>
                 </div>
 
                 <div class="mb-6 flex justify-between items-end">
-                    <h2 class="text-xl font-bold text-white">Vault Interface</h2>
+                    <h2 class="text-xl font-bold text-white" data-i18n="vault_interface">Vault Interface</h2>
                     <div class="text-right">
-                        <p class="text-xs text-slate-500 mb-1">Your USDC Balance</p>
+                        <p class="text-xs text-slate-500 mb-1" data-i18n="your_balance">Your USDC Balance</p>
                         <p id="userBalanceDisplay" class="font-mono text-sm font-semibold">0.00</p>
                     </div>
                 </div>
 
                 <!-- Tabs -->
                 <div class="flex border-b border-slate-800 mb-6">
-                    <button id="tabDeposit" class="flex-1 pb-3 text-center font-medium border-b-2 border-primary text-white transition-colors">Deposit</button>
-                    <button id="tabWithdraw" class="flex-1 pb-3 text-center font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-300 transition-colors">Withdraw</button>
+                    <button id="tabDeposit" class="flex-1 pb-3 text-center font-medium border-b-2 border-primary text-white transition-colors" data-i18n="tab_deposit">Deposit</button>
+                    <button id="tabWithdraw" class="flex-1 pb-3 text-center font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-300 transition-colors" data-i18n="tab_withdraw">Withdraw</button>
                 </div>
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-400 mb-2">Amount (USDC)</label>
+                        <label class="block text-sm font-medium text-slate-400 mb-2" data-i18n="amount_label">Amount (USDC)</label>
                         <div class="relative">
                             <input type="number" id="amountInput" placeholder="0.00" class="w-full bg-slate-900 border border-slate-700 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono">
                             <div class="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -133,51 +140,124 @@
                     </div>
 
                     <button id="actionBtn" class="w-full bg-primary hover:bg-primaryHover text-white py-3 rounded-lg font-bold shadow-lg shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center">
-                        <span>Approve & Deposit</span>
+                        <span data-i18n="btn_approve">Approve & Deposit</span>
                     </button>
 
                     <p id="statusMsg" class="text-sm text-center min-h-[20px] font-mono mt-4"></p>
                 </div>
             </div>
 
-        </div>
-
-        <!-- Security & FAQ Section -->
-        <div class="max-w-4xl w-full mt-6 space-y-6">
-            <!-- Security & Transparency -->
-            <div class="bg-dark rounded-2xl border border-slate-800 p-6 shadow-xl relative overflow-hidden">
-                <h2 class="text-xl font-bold text-white mb-4 flex items-center">
-                    <svg class="w-6 h-6 text-accent mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                    Security & Transparency
-                </h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <a href="https://basescan.org/address/0xC29688C7ca27c2826469D3F14D417562CcF5a3b5#code" target="_blank" class="bg-slate-800/50 hover:bg-slate-800 p-4 rounded-xl border border-slate-700/50 transition-colors flex flex-col items-center text-center">
-                        <span class="text-accent font-bold mb-1">✓ Verified Contract</span>
-                        <span class="text-xs text-slate-400 break-all">0xC296...a3b5</span>
-                    </a>
-                    <a href="https://github.com/yurac777/alm-vault-dapp/blob/main/WHITEPAPER.md" target="_blank" class="bg-slate-800/50 hover:bg-slate-800 p-4 rounded-xl border border-slate-700/50 transition-colors flex flex-col items-center text-center">
-                        <span class="text-white font-bold mb-1">📄 Architecture</span>
-                        <span class="text-xs text-slate-400">Technical Whitepaper</span>
-                    </a>
-                    <a href="https://github.com/yurac777/alm-vault-dapp/blob/main/performance_audit.md" target="_blank" class="bg-slate-800/50 hover:bg-slate-800 p-4 rounded-xl border border-slate-700/50 transition-colors flex flex-col items-center text-center">
-                        <span class="text-primary font-bold mb-1">⚡ Stress Tested</span>
-                        <span class="text-xs text-slate-400">Performance Audit Report</span>
-                    </a>
-                </div>
             </div>
 
-            <!-- FAQ -->
-            <div class="bg-dark rounded-2xl border border-slate-800 p-6 shadow-xl">
-                <h3 class="text-lg font-bold text-white mb-3">FAQ</h3>
-                <div class="space-y-4">
+            <!-- Analytics & ROI Section -->
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- ROI Calculator -->
+                <div class="bg-dark rounded-2xl border border-slate-800 p-6 shadow-xl col-span-1 flex flex-col justify-between relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-accent opacity-5 rounded-full blur-2xl transform translate-x-1/2 -translate-y-1/2"></div>
                     <div>
-                        <h4 class="text-slate-300 font-semibold mb-1">Are my funds safe?</h4>
-                        <p class="text-sm text-slate-400 leading-relaxed">
-                            Yes. The contract inherits the fully audited OpenZeppelin ERC-4626 standard. Admin keys belong to a cold wallet. The Keeper bot can only execute rebalance operations and does not have any permissions to withdraw user funds.
-                        </p>
+                        <h3 class="text-lg font-bold text-white mb-2 flex items-center">
+                            <span class="mr-2">🧮</span> <span data-i18n="roi_title">Yield Predictor</span>
+                        </h3>
+                        <p class="text-xs text-slate-400 mb-4" data-i18n="roi_desc">Calculate your expected return based on dynamic APR (80% est).</p>
+                        
+                        <label class="block text-sm font-medium text-slate-400 mb-2" data-i18n="invest_amount">Investment Amount ($)</label>
+                        <input type="range" id="roiSlider" min="100" max="100000" step="100" value="10000" class="w-full mb-2 accent-primary cursor-pointer">
+                        <div class="flex justify-between text-xs text-slate-500 mb-4 font-mono">
+                            <span>$100</span>
+                            <span id="roiSliderVal" class="text-white font-bold">$10,000</span>
+                            <span>$100k</span>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-slate-900 rounded-xl p-4 border border-slate-800">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm text-slate-400" data-i18n="monthly_yield">Monthly Yield</span>
+                            <span id="roiMonthly" class="font-bold text-accent">+$666</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-slate-400" data-i18n="yearly_yield">Yearly Yield</span>
+                            <span id="roiYearly" class="font-bold text-accent">+$8,000</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Competitive Benchmarking -->
+                <div class="bg-dark rounded-2xl border border-slate-800 p-6 shadow-xl col-span-1 md:col-span-2">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center">
+                        <span class="mr-2">⚔️</span> <span data-i18n="benchmark_title">Why ALM Vault?</span>
+                    </h3>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead>
+                                <tr class="text-slate-500 border-b border-slate-800">
+                                    <th class="pb-3 font-medium px-2" data-i18n="strategy_col">Strategy</th>
+                                    <th class="pb-3 font-medium text-right px-2" data-i18n="apr_col">Expected APY</th>
+                                    <th class="pb-3 font-medium text-right px-2" data-i18n="risk_col">Risk Profile</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/50">
+                                <tr>
+                                    <td class="py-3 px-2 text-slate-300">Traditional Bank</td>
+                                    <td class="py-3 px-2 text-right text-slate-400">~4.0%</td>
+                                    <td class="py-3 px-2 text-right"><span class="bg-red-900/30 text-red-400 px-2 py-1 rounded text-xs border border-red-900/50">Inflation</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-3 px-2 text-slate-300">Hold ETH</td>
+                                    <td class="py-3 px-2 text-right text-slate-400">0.0%</td>
+                                    <td class="py-3 px-2 text-right"><span class="bg-orange-900/30 text-orange-400 px-2 py-1 rounded text-xs border border-orange-900/50">High Volatility</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-3 px-2 text-slate-300">Uni V3 LP (No Hedge)</td>
+                                    <td class="py-3 px-2 text-right text-slate-400">~20.0%</td>
+                                    <td class="py-3 px-2 text-right"><span class="bg-yellow-900/30 text-yellow-400 px-2 py-1 rounded text-xs border border-yellow-900/50">Impermanent Loss</span></td>
+                                </tr>
+                                <tr class="bg-primary/5">
+                                    <td class="py-3 px-2 text-white font-bold flex items-center"><div class="w-2 h-2 bg-accent rounded-full mr-2 shadow-[0_0_8px_#10b981] animate-pulse"></div>ALM AI-Quant</td>
+                                    <td class="py-3 px-2 text-right text-accent font-bold">33% - 150%</td>
+                                    <td class="py-3 px-2 text-right"><span class="bg-accent/20 text-accent px-2 py-1 rounded text-xs border border-accent/30 font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)]">Delta-Neutral</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
+
+            <!-- Security & FAQ Section -->
+            <div class="mt-6 space-y-6">
+                <!-- Security & Transparency -->
+                <div class="bg-dark rounded-2xl border border-slate-800 p-6 shadow-xl relative overflow-hidden">
+                    <h2 class="text-xl font-bold text-white mb-4 flex items-center">
+                        <svg class="w-6 h-6 text-accent mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        <span data-i18n="sec_title">Security & Transparency</span>
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <a href="https://basescan.org/address/0xC29688C7ca27c2826469D3F14D417562CcF5a3b5#code" target="_blank" class="bg-slate-800/50 hover:bg-slate-800 p-4 rounded-xl border border-slate-700/50 transition-colors flex flex-col items-center text-center">
+                            <span class="text-accent font-bold mb-1" data-i18n="sec_verified">✓ Verified Contract</span>
+                            <span class="text-xs text-slate-400 break-all">0xC296...a3b5</span>
+                        </a>
+                        <a href="https://github.com/yurac777/alm-vault-dapp/blob/main/WHITEPAPER.md" target="_blank" class="bg-slate-800/50 hover:bg-slate-800 p-4 rounded-xl border border-slate-700/50 transition-colors flex flex-col items-center text-center">
+                            <span class="text-white font-bold mb-1" data-i18n="sec_arch">📄 Architecture</span>
+                            <span class="text-xs text-slate-400" data-i18n="sec_arch_desc">Technical Whitepaper</span>
+                        </a>
+                        <a href="https://github.com/yurac777/alm-vault-dapp/blob/main/performance_audit.md" target="_blank" class="bg-slate-800/50 hover:bg-slate-800 p-4 rounded-xl border border-slate-700/50 transition-colors flex flex-col items-center text-center">
+                            <span class="text-primary font-bold mb-1" data-i18n="sec_stress">⚡ Stress Tested</span>
+                            <span class="text-xs text-slate-400" data-i18n="sec_stress_desc">Performance Audit Report</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- FAQ -->
+                <div class="bg-dark rounded-2xl border border-slate-800 p-6 shadow-xl">
+                    <h3 class="text-lg font-bold text-white mb-3" data-i18n="faq_title">FAQ</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="text-slate-300 font-semibold mb-1" data-i18n="faq_q1">Are my funds safe?</h4>
+                            <p class="text-sm text-slate-400 leading-relaxed" data-i18n="faq_a1">
+                                Yes. The contract inherits the fully audited OpenZeppelin ERC-4626 standard. Admin keys belong to a cold wallet. The Keeper bot can only execute rebalance operations and does not have any permissions to withdraw user funds.
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -190,13 +270,177 @@
         </div>
     </footer>
 
-    <!-- DApp Logic -->
+    <!-- i18n & DApp Logic -->
     <script>
+        // --- i18n Translations ---
+        const translations = {
+            en: {
+                connect_wallet: "Connect Wallet",
+                protocol_status: "Protocol Status",
+                delta_neutral: "Delta-Neutral",
+                target_apr: "Target APR",
+                total_tvl: "Total TVL",
+                strategy: "Strategy",
+                strategy_desc: "Aave V3 Short + Uni V3 CL",
+                network: "Network",
+                lm_live: "✨ Liquidity Mining is LIVE!",
+                lm_desc: "Deposit USDC to automatically start accruing",
+                lm_pts: "points.",
+                vault_interface: "Vault Interface",
+                your_balance: "Your USDC Balance",
+                tab_deposit: "Deposit",
+                tab_withdraw: "Withdraw",
+                amount_label: "Amount (USDC)",
+                btn_approve: "Approve & Deposit",
+                btn_withdraw: "Withdraw",
+                roi_title: "Yield Predictor",
+                roi_desc: "Calculate your expected return based on dynamic APR (80% est).",
+                invest_amount: "Investment Amount ($)",
+                monthly_yield: "Monthly Yield",
+                yearly_yield: "Yearly Yield",
+                benchmark_title: "Why ALM Vault?",
+                strategy_col: "Strategy",
+                apr_col: "Expected APY",
+                risk_col: "Risk Profile",
+                sec_title: "Security & Transparency",
+                sec_verified: "✓ Verified Contract",
+                sec_arch: "📄 Architecture",
+                sec_arch_desc: "Technical Whitepaper",
+                sec_stress: "⚡ Stress Tested",
+                sec_stress_desc: "Performance Audit Report",
+                faq_title: "FAQ",
+                faq_q1: "Are my funds safe?",
+                faq_a1: "Yes. The contract inherits the fully audited OpenZeppelin ERC-4626 standard. Admin keys belong to a cold wallet. The Keeper bot can only execute rebalance operations and does not have any permissions to withdraw user funds.",
+                pls_connect: "Please connect wallet to interact"
+            },
+            ru: {
+                connect_wallet: "Подключить",
+                protocol_status: "Статус Протокола",
+                delta_neutral: "Дельта-Нейтрально",
+                target_apr: "Целевой APR",
+                total_tvl: "Общий TVL",
+                strategy: "Стратегия",
+                strategy_desc: "Шорт Aave V3 + Uni V3 CL",
+                network: "Сеть",
+                lm_live: "✨ Майнинг ликвидности АКТИВЕН!",
+                lm_desc: "Внесите USDC для автоматического заработка",
+                lm_pts: "поинтов.",
+                vault_interface: "Интерфейс Хранилища",
+                your_balance: "Ваш баланс USDC",
+                tab_deposit: "Депозит",
+                tab_withdraw: "Вывод",
+                amount_label: "Сумма (USDC)",
+                btn_approve: "Одобрить и Внести",
+                btn_withdraw: "Вывести",
+                roi_title: "Прогноз Доходности",
+                roi_desc: "Расчет ожидаемой прибыли по динамическому APR (оценка 80%).",
+                invest_amount: "Сумма Инвестиции ($)",
+                monthly_yield: "Прибыль в месяц",
+                yearly_yield: "Прибыль в год",
+                benchmark_title: "Почему ALM Vault?",
+                strategy_col: "Стратегия",
+                apr_col: "Ожидаемый APY",
+                risk_col: "Профиль Риска",
+                sec_title: "Безопасность и Прозрачность",
+                sec_verified: "✓ Контракт Верифицирован",
+                sec_arch: "📄 Архитектура",
+                sec_arch_desc: "Технический Whitepaper",
+                sec_stress: "⚡ Стресс-Тест",
+                sec_stress_desc: "Отчет Аудита",
+                faq_title: "Частые Вопросы",
+                faq_q1: "Безопасны ли мои средства?",
+                faq_a1: "Да. Контракт использует проверенный стандарт OpenZeppelin ERC-4626. Админ-ключи на холодном кошельке. Бот имеет право только ребалансировать активы, без прав на вывод.",
+                pls_connect: "Подключите кошелек для работы"
+            },
+            zh: {
+                connect_wallet: "连接钱包",
+                protocol_status: "协议状态",
+                delta_neutral: "Delta 中性",
+                target_apr: "目标 APR",
+                total_tvl: "总 TVL",
+                strategy: "策略",
+                strategy_desc: "Aave V3 空头 + Uni V3 CL",
+                network: "网络",
+                lm_live: "✨ 流动性挖矿已开启！",
+                lm_desc: "存入 USDC 自动赚取",
+                lm_pts: "积分。",
+                vault_interface: "金库界面",
+                your_balance: "您的 USDC 余额",
+                tab_deposit: "存入",
+                tab_withdraw: "提取",
+                amount_label: "金额 (USDC)",
+                btn_approve: "授权并存入",
+                btn_withdraw: "提取",
+                roi_title: "收益预测",
+                roi_desc: "根据动态 APR (预估 80%) 计算您的预期收益。",
+                invest_amount: "投资金额 ($)",
+                monthly_yield: "月化收益",
+                yearly_yield: "年化收益",
+                benchmark_title: "为什么选择 ALM Vault?",
+                strategy_col: "策略",
+                apr_col: "预期 APY",
+                risk_col: "风险状况",
+                sec_title: "安全与透明",
+                sec_verified: "✓ 合约已验证",
+                sec_arch: "📄 架构设计",
+                sec_arch_desc: "技术白皮书",
+                sec_stress: "⚡ 压力测试",
+                sec_stress_desc: "性能审计报告",
+                faq_title: "常见问题",
+                faq_q1: "我的资金安全吗？",
+                faq_a1: "是的。合约继承了经过全面审计的 OpenZeppelin ERC-4626 标准。管理员密钥存放在冷钱包中。Keeper 机器人只能执行再平衡操作，没有任何提取用户资金的权限。",
+                pls_connect: "请连接钱包"
+            }
+        };
+
+        function changeLanguage(lang) {
+            localStorage.setItem("almVaultLang", lang);
+            document.querySelectorAll("[data-i18n]").forEach(el => {
+                const key = el.getAttribute("data-i18n");
+                if (translations[lang] && translations[lang][key]) {
+                    // We only want to replace the text content, keeping internal HTML if any
+                    // But in our case all data-i18n tags are purely text wrappers
+                    if (el.tagName === "BUTTON" && el.id === "connectWalletBtn") {
+                        // Preserve the button logic text if it's already an address
+                        if (!el.innerText.includes("0x")) {
+                            el.innerText = translations[lang][key];
+                        }
+                    } else if (el.tagName === "BUTTON" && el.id === "actionBtn") {
+                        el.innerHTML = `<span>${translations[lang][currentMode === 'deposit' ? 'btn_approve' : 'btn_withdraw']}</span>`;
+                    } else {
+                        el.innerText = translations[lang][key];
+                    }
+                }
+            });
+            document.getElementById('langSelect').value = lang;
+        }
+
+        // Init language
+        const savedLang = localStorage.getItem("almVaultLang") || "en";
+        changeLanguage(savedLang);
+
+        // --- ROI Calculator Logic ---
+        const TARGET_APR = 0.80; // 80%
+
+        function updateROI() {
+            const amount = parseInt(document.getElementById('roiSlider').value);
+            document.getElementById('roiSliderVal').innerText = `$${amount.toLocaleString()}`;
+            
+            const yearly = amount * TARGET_APR;
+            const monthly = yearly / 12;
+
+            document.getElementById('roiYearly').innerText = `+$${Math.floor(yearly).toLocaleString()}`;
+            document.getElementById('roiMonthly').innerText = `+$${Math.floor(monthly).toLocaleString()}`;
+        }
+        
+        document.getElementById('roiSlider').addEventListener('input', updateROI);
+        updateROI();
+
+
+        // --- Web3 Logic (Regression Shield Active) ---
         const VAULT_ADDRESS = "0x87eE1eCa84E9308946eEcba998625272A6ED9a00";
         const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
         const BASE_CHAIN_ID = 8453;
-        
-        // Use public Base RPC for reading data without wallet
         const PUBLIC_RPC = "https://mainnet.base.org";
 
         const VAULT_ABI = [
@@ -215,7 +459,7 @@
         let provider;
         let signer;
         let userAddress;
-        let currentMode = 'deposit'; // 'deposit' or 'withdraw'
+        let currentMode = 'deposit'; 
 
         const connectWalletBtn = document.getElementById('connectWalletBtn');
         const tvlDisplay = document.getElementById('tvlDisplay');
@@ -227,7 +471,6 @@
         const amountInput = document.getElementById('amountInput');
         const statusMsg = document.getElementById('statusMsg');
 
-        // Initialize public read-only provider for TVL
         async function fetchTVL() {
             try {
                 const readProvider = new ethers.JsonRpcProvider(PUBLIC_RPC);
@@ -296,7 +539,6 @@
 
                 await updateUserBalance();
                 
-                // Setup listeners
                 window.ethereum.on('accountsChanged', () => window.location.reload());
                 window.ethereum.on('chainChanged', () => window.location.reload());
 
@@ -329,18 +571,20 @@
             statusMsg.innerText = '';
             updateUserBalance();
 
+            const curLang = localStorage.getItem("almVaultLang") || "en";
+
             if (mode === 'deposit') {
                 tabDeposit.classList.replace('border-transparent', 'border-primary');
                 tabDeposit.classList.replace('text-slate-500', 'text-white');
                 tabWithdraw.classList.replace('border-primary', 'border-transparent');
                 tabWithdraw.classList.replace('text-white', 'text-slate-500');
-                actionBtn.innerHTML = '<span>Approve & Deposit</span>';
+                actionBtn.innerHTML = `<span>${translations[curLang]['btn_approve']}</span>`;
             } else {
                 tabWithdraw.classList.replace('border-transparent', 'border-primary');
                 tabWithdraw.classList.replace('text-slate-500', 'text-white');
                 tabDeposit.classList.replace('border-primary', 'border-transparent');
                 tabDeposit.classList.replace('text-white', 'text-slate-500');
-                actionBtn.innerHTML = '<span>Withdraw</span>';
+                actionBtn.innerHTML = `<span>${translations[curLang]['btn_withdraw']}</span>`;
             }
         }
 
@@ -369,13 +613,12 @@
 
             setLoading(true);
             try {
-                const amount = ethers.parseUnits(amountStr, 6); // USDC is 6 decimals
+                const amount = ethers.parseUnits(amountStr, 6); 
                 
                 if (currentMode === 'deposit') {
                     const usdcContract = new ethers.Contract(USDC_ADDRESS, USDC_ABI, signer);
                     const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, signer);
 
-                    // Check allowance
                     showStatus("Checking allowance...");
                     const allowance = await usdcContract.allowance(userAddress, VAULT_ADDRESS);
                     if (allowance < amount) {
@@ -410,13 +653,11 @@
             setLoading(false);
         }
 
-        // Event Listeners
         connectWalletBtn.addEventListener('click', connectWallet);
         tabDeposit.addEventListener('click', () => setMode('deposit'));
         tabWithdraw.addEventListener('click', () => setMode('withdraw'));
         actionBtn.addEventListener('click', handleAction);
 
-        // Init
         fetchTVL();
     </script>
 </body>
