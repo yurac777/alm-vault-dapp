@@ -34,6 +34,7 @@ def main():
 
     deployer = w3.to_checksum_address(WALLET)
     vault_addr = w3.to_checksum_address(VAULT)
+    print("Using Vault:", vault_addr)
     usdc_contract = w3.eth.contract(address=w3.to_checksum_address(USDC), abi=ERC20_ABI)
     vault_contract = w3.eth.contract(address=vault_addr, abi=VAULT_ABI)
 
