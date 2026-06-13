@@ -13,6 +13,8 @@ from logging.handlers import RotatingFileHandler
 import web3.exceptions
 from datetime import datetime, timezone
 from decimal import Decimal
+import subprocess
+import json
 
 # ── Bootstrap path ──────────────────────────────────────────────────────────
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -123,6 +125,23 @@ def append_to_csv(timestamp, eth_price, net_worth, gas_spent, profit, llm_decisi
             writer.writerow([timestamp, eth_price, net_worth, gas_spent, profit, llm_decision, action_taken])
     except Exception as exc:
         logger.error("CSV write error: %s", exc)
+
+def export_json_and_push():
+    try:
+        with open(CSV_FILE, "r", encoding="utf-8") as f:
+            lines = list(csv.DictReader(f))
+        last_50 = lines[-50:]
+        json_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "pnl_history.json")
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(last_50, f)
+        
+        # Git operations (Anti-Silent Fail)
+        subprocess.run(["git", "add", json_path], check=True, cwd=os.path.dirname(json_path))
+        subprocess.run(["git", "commit", "-m", "update pnl history"], check=False, cwd=os.path.dirname(json_path))
+        subprocess.run(["git", "push"], check=False, cwd=os.path.dirname(json_path))
+        logger.info("[Git] PnL history pushed to repo.")
+    except Exception as e:
+        logger.error("[Git] Error pushing PnL history: %s", e)
 
 
 # ── Main ─────────────────────────────────────────────────────────────────────
@@ -537,6 +556,7 @@ def main():
             # ── CSV log ──────────────────────────────────────────────────
             append_to_csv(timestamp_str, float(eth_price), pnl["net_worth"],
                           pnl["gas_spent"], pnl["net_profit"], f"{tick_down_delta}/{tick_up_delta}", action_taken)
+            export_json_and_push()
 
             # ── 4-hour Telegram report ───────────────────────────────────
             if loop_count > 0 and loop_count % 16 == 0:

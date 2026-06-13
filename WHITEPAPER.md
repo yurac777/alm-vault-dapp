@@ -1,35 +1,15 @@
-# ALM AI-Quant Vault (Uniswap V4 Edition)
+# ALM AI-Quant Vault (Uniswap V3 Edition) - Technical Whitepaper
 
-## 1. Проблема рынка (Market Problem)
+## 1. Market Problem
+Traditional DeFi Liquidity Providers (LPs) face two critical issues:
+1. **Impermanent Loss**: As asset prices diverge, LPs lose value compared to simply holding the assets.
+2. **Gas Overhead**: Active management of concentrated liquidity on Uniswap V3 requires constant rebalancing, leading to high gas costs.
 
-В мире децентрализованных финансов (DeFi) поставщики ликвидности (LPs) постоянно сталкиваются с двумя фундаментальными проблемами, которые уничтожают их потенциальную прибыль:
-1. **Impermanent Loss (Непостоянные потери):** Предоставление ликвидности в волатильных парах (например, WETH/USDC) подвергает капитал курсовым рискам. Если цена актива резко меняется, LP остается с обесценивающимся активом, теряя деньги по сравнению с простым удержанием (HODL).
-2. **Огромные затраты на газ (Gas Overhead):** Для минимизации Impermanent Loss и максимизации сбора комиссий в Uniswap V3 требуется постоянная ребалансировка позиции (перенос ликвидности в новый ценовой диапазон). Каждая такая операция требует изъятия старой ликвидности, конвертации токенов и добавления новой ликвидности, что выливается в огромные расходы на газ, делая активное управление нерентабельным для небольших и средних капиталов.
+## 2. The Solution
+ALM Vault solves this by combining Aave V3 for delta-neutral hedging and Uniswap V3 for fee generation. By dynamically borrowing the volatile asset (WETH) against a stablecoin collateral (USDC), the vault completely neutralizes price exposure.
 
-## 2. Наше решение и Архитектура (The Solution)
-
-ALMVault предлагает революционный подход, объединяющий ведущие DeFi-протоколы и новые стандарты EVM в единый мощный финансовый инструмент.
-
-Наша архитектура базируется на трех китах:
-* **Дельта-нейтральность через Aave V3:** Мы полностью нивелируем курсовой риск WETH. Система берет USDC пользователя, использует часть как залог в Aave V3 и занимает WETH. Таким образом, любое падение цены WETH компенсируется уменьшением нашего долга в долларовом эквиваленте (шорт-позиция перекрывает лонг).
-* **Концентрированная ликвидность в Uniswap V4:** Занятый WETH и оставшийся USDC направляются в пулы Uniswap V4 с индивидуальными настройками `tickSpacing` и `fee`, обеспечивая сверхплотное концентрирование ликвидности прямо вокруг текущей рыночной цены для максимизации сбора комиссий.
-* **Flash Accounting (EIP-1153):** Мы используем инновационный механизм временного хранения (transient storage) в Uniswap V4. Все операции (изъятие, свап, добавление, погашение долга) производятся виртуально в рамках одной транзакции (сводятся нетто-балансы), и только итоговая разница переводится между контрактами. Это радикально снижает потребление газа.
-
-## 3. Секретное оружие: Off-chain AI SRE-Движок
-
-Сердцем ALMVault является наш проприетарный автономный Python SRE-движок (Site Reliability Engineering), управляемый искусственным интеллектом.
-
-* **Локальная LLM (`gemini-pro-agent`):** Наш кипер использует мощь LLM для анализа рыночных условий в реальном времени.
-* **Динамический расчет волатильности (ATR):** Движок постоянно рассчитывает Average True Range (ATR) для пары WETH/USDC. На основе этих данных ИИ динамически принимает решения о ширине диапазона (`tickSpacing`) для новой позиции. В периоды штиля ликвидность сжимается для максимизации APY, в моменты шторма — расширяется для минимизации риска выхода за границы.
-* **Оптимизация простаивающего капитала (Idle Capital):** Благодаря умной математике, буфер простаивающего капитала (Idle Capital Buffer) сведен к историческому минимуму и составляет **менее 5%**. Более 95% вашего капитала всегда работает в пуле и приносит комиссии.
-
-## 4. Показатели и Эффективность (Metrics)
-
-Архитектура ALMVault доказала свою беспрецедентную эффективность в боевых условиях сети Base Mainnet.
-
-* **Стоимость полного цикла ребаланса:** Благодаря связке Uniswap V4 (EIP-1153) и оптимизированному смарт-контракту на Yul/Solidity, полный цикл ребалансировки (Aave Withdraw -> Repay -> Borrow -> Uniswap Modify Liquidity) обходится всего в **~138,000 газа**.
-* **Финансовые затраты:** В сети Base Mainnet стоимость такой транзакции составляет **менее $0.005**.
-* **Капиталоэффективность:** Мы являемся **самым капиталоэффективным решением на рынке**, позволяя осуществлять микро-ребалансировки даже для небольших портфелей без риска сжечь всю прибыль на комиссиях сети.
-
----
-*ALMVault: The future of autonomous, delta-neutral, zero-waste liquidity provision.*
+## 3. The Money Printer Architecture
+- **Deposit**: User deposits USDC.
+- **Hedging**: The vault deposits a portion to Aave V3, borrows WETH.
+- **Liquidity Provision**: The vault provides WETH and the remaining USDC to Uniswap V3 within a concentrated tick range.
+- **Auto-Sweep**: Trading fees and Aave yields are automatically compounded back into the vault.
