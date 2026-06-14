@@ -967,27 +967,26 @@
         // --- Live PnL Chart Logic ---
         async function loadPnLChart() {
             try {
-                let data;
+                let data = [];
                 try {
                     const response = await fetch('pnl_history.json');
                     if (response.ok) {
                         data = await response.json();
-                    } else {
-                        throw new Error("No file");
                     }
                 } catch(e) {
-                    // Fallback realistic mock data if file is missing
-                    data = [];
-                    let baseVal = 2850000;
-                    for(let i=30; i>=0; i--) {
-                        const d = new Date();
-                        d.setDate(d.getDate() - i);
-                        baseVal += (Math.random() * 5000) - 1000;
-                        data.push({ timestamp: d.toISOString().split('T')[0], net_worth: baseVal });
-                    }
+                    console.error("No pnl_history.json found", e);
                 }
                 
-                const labels = data.map(item => item.timestamp ? item.timestamp.split(' ')[1] : item.Timestamp);
+                if (data.length === 0) {
+                    const ctx = document.getElementById('pnlChart').getContext('2d');
+                    ctx.font = '14px Arial';
+                    ctx.fillStyle = '#64748b';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Awaiting first epoch', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                    return;
+                }
+                
+                const labels = data.map(item => item.timestamp ? item.timestamp.split(' ')[0] : item.Timestamp);
                 const pnlData = data.map(item => parseFloat(item.net_worth || item.Profit_USD));
                 
                 const ctx = document.getElementById('pnlChart').getContext('2d');
