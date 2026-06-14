@@ -448,6 +448,7 @@
         const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
         const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
         const SWAP_ROUTER_ADDRESS = "0x2626664c2603336E57B271c5C0b26F421741e481";
+        const CHAINLINK_ETH_USD = "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70";
         const BASE_CHAIN_ID = 8453;
         const PUBLIC_RPC = "https://mainnet.base.org";
 
@@ -463,6 +464,10 @@
 
         const ZAPPER_ABI = [
             "function zapAndDeposit(address _swapTarget, bytes _swapData, address _receiver, address _referrer) payable returns (uint256 shares)"
+        ];
+
+        const CHAINLINK_ABI = [
+            "function latestRoundData() view returns (uint80, int256 answer, uint256, uint256, uint80)"
         ];
 
         const USDC_ABI = [
@@ -747,6 +752,15 @@
                         const amountWei = ethers.parseEther(amountStr);
                         const zapperContract = new ethers.Contract(ZAPPER_ADDRESS, ZAPPER_ABI, signer);
                         
+                        showStatus("Calculating 1% Slippage Protection via Chainlink...");
+                        const chainlinkContract = new ethers.Contract(CHAINLINK_ETH_USD, CHAINLINK_ABI, provider);
+                        const roundData = await chainlinkContract.latestRoundData();
+                        const ethPrice = roundData.answer; // 8 decimals BigInt
+                        
+                        // Expected USDC (6 decimals) = amountWei(18 dec) * ethPrice(8 dec) / 10^20
+                        const expectedUsdcBigInt = (amountWei * ethPrice) / (10n ** 20n);
+                        const amountOutMinimum = (expectedUsdcBigInt * 99n) / 100n; // 1% slippage
+                        
                         showStatus("Encoding Swap Data for Uniswap V3...");
                         // exactInputSingle(ExactInputSingleParams params)
                         // ExactInputSingleParams: (address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 deadline, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96)
@@ -760,7 +774,7 @@
                             recipient: ZAPPER_ADDRESS, // Zapper must receive the USDC
                             deadline: Math.floor(Date.now() / 1000) + 60 * 20,
                             amountIn: amountWei,
-                            amountOutMinimum: 0, // In production add slippage protection, for viral MVP 0 is fine since Zapper enforces total min.
+                            amountOutMinimum: amountOutMinimum,
                             sqrtPriceLimitX96: 0
                         };
                         
