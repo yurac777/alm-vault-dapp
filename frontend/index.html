@@ -695,6 +695,7 @@
                 tabWithdraw.classList.replace('text-white', 'text-slate-500');
                 const yb = document.querySelector('[data-i18n="your_balance"]');
                 if(yb) yb.innerText = translations[curLang]['your_balance'] || "Your USDC Balance";
+                tokenSelect.disabled = false;
             } else {
                 tabWithdraw.classList.replace('border-transparent', 'border-primary');
                 tabWithdraw.classList.replace('text-slate-500', 'text-white');
@@ -704,8 +705,6 @@
                 if(yb) yb.innerText = translations[curLang]['issued_almusd'] || "Your Issued almUSD";
                 tokenSelect.value = "USDC"; // Force USDC on withdraw
                 tokenSelect.disabled = true;
-            } else {
-                tokenSelect.disabled = false;
             }
             updateNetworkUI();
         }
