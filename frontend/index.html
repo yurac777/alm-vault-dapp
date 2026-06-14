@@ -221,7 +221,7 @@
                     </h3>
                     <p class="text-sm text-slate-400 mb-4" data-i18n="bridge_desc">Bridge assets from any chain directly to USDC on Base to mint almUSD.</p>
                     <div class="rounded-xl overflow-hidden border border-slate-700 bg-slate-900">
-                        <iframe src="https://jumper.exchange/?toChain=8453&toToken=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" width="100%" height="450" frameborder="0" style="border:0;" allow="clipboard-read; clipboard-write; camera"></iframe>
+                        <iframe src="https://jumper.exchange/widget?toChain=8453&toToken=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" width="100%" height="450" frameborder="0" style="border:0;" allow="clipboard-read; clipboard-write; camera"></iframe>
                     </div>
                 </div>
 
@@ -232,7 +232,7 @@
                     </h3>
                     <p class="text-sm text-slate-400 mb-4" data-i18n="fiat_desc">Buy USDC directly to your Base wallet using credit card or bank transfer.</p>
                     <div class="rounded-xl overflow-hidden border border-slate-700 bg-slate-900">
-                        <iframe src="https://global.transak.com?cryptoCurrencyList=USDC&network=base&themeColor=10B981&hideMenu=true" width="100%" height="450" frameborder="0" style="border:0;" allow="camera;microphone;fullscreen;payment"></iframe>
+                        <iframe src="https://global.transak.com/?cryptoCurrencyList=USDC&network=base&themeColor=10B981&hideMenu=true" width="100%" height="450" frameborder="0" style="border:0;" allow="camera;microphone;fullscreen;payment"></iframe>
                     </div>
                 </div>
             </div>
@@ -332,9 +332,9 @@
                             <span class="text-accent font-bold mb-1" data-i18n="sec_verified">✓ Verified Vault</span>
                             <span class="text-xs text-slate-400 break-all">0x402C...5527</span>
                         </a>
-                        <a href="https://basescan.org/address/0xcF473A11A1675BEb5b5bCcBB06dFAbd54463283e#code" target="_blank" class="bg-slate-800/50 hover:bg-slate-800 p-4 rounded-xl border border-slate-700/50 transition-colors flex flex-col items-center text-center">
-                            <span class="text-white font-bold mb-1" data-i18n="sec_arch">✓ Verified Zapper</span>
-                            <span class="text-xs text-slate-400" data-i18n="sec_arch_desc">0xcF47...283e</span>
+                        <a href="https://github.com/yurac777/alm-vault-dapp/blob/main/WHITEPAPER.md" target="_blank" class="bg-slate-800/50 hover:bg-slate-800 p-4 rounded-xl border border-slate-700/50 transition-colors flex flex-col items-center text-center">
+                            <span class="text-white font-bold mb-1" data-i18n="sec_arch">📄 Architecture</span>
+                            <span class="text-xs text-slate-400" data-i18n="sec_arch_desc">Technical Whitepaper</span>
                         </a>
                         <a href="https://github.com/yurac777/alm-vault-dapp/blob/main/performance_audit.md" target="_blank" class="bg-slate-800/50 hover:bg-slate-800 p-4 rounded-xl border border-slate-700/50 transition-colors flex flex-col items-center text-center">
                             <span class="text-primary font-bold mb-1" data-i18n="sec_stress">⚡ Stress Tested</span>
@@ -550,8 +550,11 @@
                     const colBaseUsd = parseFloat(ethers.formatUnits(accountData[0], 8));
                     const uniUsd = parseFloat(ethers.formatUnits(cachedUni, 6));
                     
-                    if (netDepUsd > 0) {
-                        ratio = ((colBaseUsd + uniUsd) / netDepUsd) * 100;
+                    if (netDepUsd > 0.01) {
+                        const calc = ((colBaseUsd + uniUsd) / netDepUsd) * 100;
+                        ratio = calc > 0 ? calc : 100.0;
+                    } else {
+                        ratio = 100.0;
                     }
                 } catch(e) {
                     console.error("Solvency calculation error:", e);
@@ -792,16 +795,16 @@
                         const exactInputSingleSignature = "exactInputSingle((address,address,uint24,address,uint256,uint256,uint256,uint160))";
                         const swapIface = new ethers.Interface(["function " + exactInputSingleSignature]);
                         
-                        const params = {
-                            tokenIn: WETH_ADDRESS,
-                            tokenOut: USDC_ADDRESS,
-                            fee: 500, // 0.05%
-                            recipient: ZAPPER_ADDRESS, // Zapper must receive the USDC
-                            deadline: Math.floor(Date.now() / 1000) + 60 * 20,
-                            amountIn: amountWei,
-                            amountOutMinimum: amountOutMinimum,
-                            sqrtPriceLimitX96: 0
-                        };
+                        const params = [
+                            WETH_ADDRESS,
+                            USDC_ADDRESS,
+                            500, // fee
+                            ZAPPER_ADDRESS, // recipient
+                            Math.floor(Date.now() / 1000) + 60 * 20,
+                            amountWei,
+                            amountOutMinimum,
+                            0 // sqrtPriceLimitX96
+                        ];
                         
                         const swapData = swapIface.encodeFunctionData("exactInputSingle", [params]);
                         
@@ -836,6 +839,7 @@
                         showStatus(`Successfully deposited ${amountStr} USDC! 🎉`, "text-accent");
                     }
                 } else {
+                    const amount = ethers.parseUnits(amountStr, 6);
                     const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, signer);
                     showStatus("Withdrawing from Vault...");
                     const txWithdraw = await vaultContract.withdraw(amount, userAddress, userAddress);
