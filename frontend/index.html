@@ -221,7 +221,7 @@
                     </h3>
                     <p class="text-sm text-slate-400 mb-4" data-i18n="bridge_desc">Bridge assets from any chain directly to USDC on Base to mint almUSD.</p>
                     <div class="rounded-xl overflow-hidden border border-slate-700 bg-slate-900">
-                        <iframe src="https://jumper.exchange/widget?toChain=8453&toToken=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" width="100%" height="450" frameborder="0" style="border:0;" allow="clipboard-read; clipboard-write; camera"></iframe>
+                        <iframe src="https://widget.li.fi/?integrator=almUSD&toChain=8453&toToken=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" width="100%" height="450" frameborder="0" style="border:0;" allow="clipboard-read; clipboard-write; camera"></iframe>
                     </div>
                 </div>
 
@@ -767,14 +767,11 @@
                 if (!connected) return;
             }
             
-            const amountStr = amountInput.value;
-            if (!amountStr || isNaN(amountStr) || Number(amountStr) <= 0) {
-                showStatus("Please enter a valid amount.", "text-red-500");
-                return;
-            }
-
             setLoading(true);
             try {
+                const amountStr = document.getElementById('amountInput').value;
+                if (!amountStr || parseFloat(amountStr) <= 0) throw new Error("Please enter a valid amount");
+
                 if (currentMode === 'deposit') {
                     if (tokenSelect.value === 'ETH') {
                         const amountWei = ethers.parseEther(amountStr);
@@ -792,19 +789,19 @@
                         showStatus("Encoding Swap Data for Uniswap V3...");
                         // exactInputSingle(ExactInputSingleParams params)
                         // ExactInputSingleParams: (address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 deadline, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96)
-                        const exactInputSingleSignature = "exactInputSingle((address,address,uint24,address,uint256,uint256,uint256,uint160))";
+                        const exactInputSingleSignature = "exactInputSingle(tuple(address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 deadline, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96) params)";
                         const swapIface = new ethers.Interface(["function " + exactInputSingleSignature]);
                         
-                        const params = [
-                            WETH_ADDRESS,
-                            USDC_ADDRESS,
-                            500, // fee
-                            ZAPPER_ADDRESS, // recipient
-                            Math.floor(Date.now() / 1000) + 60 * 20,
-                            amountWei,
-                            amountOutMinimum,
-                            0 // sqrtPriceLimitX96
-                        ];
+                        const params = {
+                            tokenIn: WETH_ADDRESS,
+                            tokenOut: USDC_ADDRESS,
+                            fee: 500, // 0.05%
+                            recipient: ZAPPER_ADDRESS, // Zapper must receive the USDC
+                            deadline: Math.floor(Date.now() / 1000) + 60 * 20,
+                            amountIn: amountWei,
+                            amountOutMinimum: amountOutMinimum,
+                            sqrtPriceLimitX96: 0
+                        };
                         
                         const swapData = swapIface.encodeFunctionData("exactInputSingle", [params]);
                         
