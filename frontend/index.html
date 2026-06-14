@@ -337,7 +337,72 @@
 
     <!-- i18n & DApp Logic -->
     <script>
-        // Translations removed as requested
+        // --- i18n Translations ---
+        const translations = {
+            en: {
+                connect_wallet: "Connect Wallet",
+                protocol_status: "Protocol Status",
+                delta_neutral: "The Ethena Killer",
+                target_apr: "Target APY",
+                total_tvl: "Total TVL",
+                strategy: "Architecture",
+                strategy_desc: "100% On-Chain (Aave + Uni V3)",
+                network: "Network",
+                lm_live: "✨ $vALM Airdrop is LIVE!",
+                lm_desc: "Farm airdrop while holding",
+                lm_pts: "almUSD",
+                vault_interface: "Mint almUSD",
+                your_balance: "Your USDC Balance",
+                issued_almusd: "Your Issued almUSD",
+                solvency: "almUSD Collateralization",
+                tab_deposit: "Mint almUSD",
+                tab_withdraw: "Redeem USDC",
+                amount_label: "Amount (USDC)",
+                btn_approve: "Approve & Mint",
+                btn_withdraw: "Redeem USDC",
+                roi_title: "Yield Predictor",
+                roi_desc: "Calculate your expected return based on dynamic APY (80% est).",
+                invest_amount: "Investment Amount ($)",
+                monthly_yield: "Monthly Yield",
+                yearly_yield: "Yearly Yield",
+                benchmark_title: "The Kill-Shot Comparison",
+                strategy_col: "Stablecoin",
+                apr_col: "Expected APY",
+                risk_col: "Risk Profile",
+                sec_title: "Security & Transparency",
+                sec_verified: "✓ Verified Contract",
+                sec_arch: "📄 Architecture",
+                sec_arch_desc: "Technical Whitepaper",
+                sec_stress: "⚡ Stress Tested",
+                sec_stress_desc: "Performance Audit Report",
+                faq_title: "FAQ",
+                faq_q1: "Are my funds safe?",
+                faq_a1: "Yes. The contract inherits the fully audited OpenZeppelin ERC-4626 standard. Admin keys belong to a cold wallet. The Keeper bot can only execute rebalance operations and does not have any permissions to withdraw user funds.",
+                pls_connect: "Please connect wallet to interact"
+            }
+        };
+
+        function changeLanguage(lang) {
+            localStorage.setItem("almVaultLang", lang);
+            document.querySelectorAll("[data-i18n]").forEach(el => {
+                const key = el.getAttribute("data-i18n");
+                if (translations[lang] && translations[lang][key]) {
+                    if (el.tagName === "BUTTON" && el.id === "connectWalletBtn") {
+                        if (!el.innerText.includes("0x")) {
+                            el.innerText = translations[lang][key];
+                        }
+                    } else if (el.tagName === "BUTTON" && el.id === "actionBtn") {
+                        el.innerHTML = `<span>${translations[lang][currentMode === 'deposit' ? 'btn_approve' : 'btn_withdraw']}</span>`;
+                    } else {
+                        el.innerText = translations[lang][key];
+                    }
+                }
+            });
+        }
+
+        // Init language
+        const savedLang = localStorage.getItem("almVaultLang") || "en";
+        changeLanguage(savedLang);
 
         // --- ROI Calculator Logic ---
         const TARGET_APR = 0.80; // 80%
@@ -509,7 +574,8 @@
                     actionBtn.innerHTML = `<span>Switch to Base Network</span>`;
                 } else {
                     actionBtn.disabled = false;
-                    actionBtn.innerHTML = `<span>${currentMode === 'deposit' ? 'Approve & Mint' : 'Redeem USDC'}</span>`;
+                    const curLang = localStorage.getItem("almVaultLang") || "en";
+                    actionBtn.innerHTML = `<span>${translations[curLang][currentMode === 'deposit' ? 'btn_approve' : 'btn_withdraw']}</span>`;
                 }
             }
         }
@@ -537,20 +603,22 @@
             statusMsg.innerText = '';
             updateUserBalance();
 
+            const curLang = localStorage.getItem("almVaultLang") || "en";
+
             if (mode === 'deposit') {
                 tabDeposit.classList.replace('border-transparent', 'border-primary');
                 tabDeposit.classList.replace('text-slate-500', 'text-white');
                 tabWithdraw.classList.replace('border-primary', 'border-transparent');
                 tabWithdraw.classList.replace('text-white', 'text-slate-500');
                 const yb = document.querySelector('[data-i18n="your_balance"]');
-                if(yb) yb.innerText = "Your USDC Balance";
+                if(yb) yb.innerText = translations[curLang]['your_balance'] || "Your USDC Balance";
             } else {
                 tabWithdraw.classList.replace('border-transparent', 'border-primary');
                 tabWithdraw.classList.replace('text-slate-500', 'text-white');
                 tabDeposit.classList.replace('border-primary', 'border-transparent');
                 tabDeposit.classList.replace('text-white', 'text-slate-500');
                 const yb = document.querySelector('[data-i18n="your_balance"]');
-                if(yb) yb.innerText = "Your Issued almUSD";
+                if(yb) yb.innerText = translations[curLang]['issued_almusd'] || "Your Issued almUSD";
             }
             updateNetworkUI();
         }
@@ -628,7 +696,7 @@
                     const allowance = await usdcContract.allowance(userAddress, VAULT_ADDRESS);
                     if (allowance < amount) {
                         showStatus("Requesting USDC approval...");
-                        const txApprove = await usdcContract.approve(VAULT_ADDRESS, ethers.MaxUint256);
+                        const txApprove = await usdcContract.approve(VAULT_ADDRESS, amount);
                         await txApprove.wait();
                     }
 
