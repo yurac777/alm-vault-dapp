@@ -755,6 +755,8 @@
         }
 
         async function handleAction() {
+            const amountStr = document.getElementById('amountInput').value;
+
             if (typeof window.ethereum !== 'undefined') {
                 const chainId = await window.ethereum.request({ method: 'eth_chainId' });
                 if (parseInt(chainId, 16) !== BASE_CHAIN_ID) {
@@ -769,7 +771,6 @@
             
             setLoading(true);
             try {
-                const amountStr = document.getElementById('amountInput').value;
                 if (!amountStr || parseFloat(amountStr) <= 0) throw new Error("Please enter a valid amount");
 
                 if (currentMode === 'deposit') {
