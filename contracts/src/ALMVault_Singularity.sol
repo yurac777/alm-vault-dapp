@@ -62,6 +62,7 @@ contract ALMVault_Singularity is ERC4626, Ownable {
     event WithdrawalRequested(address indexed user, uint256 shares);
     event ReferralRegistered(address indexed user, address indexed referrer);
     event DepositFeeDistributed(address indexed referrer, uint256 amount);
+    event RewardsClaimed(address indexed user, uint256 amount);
 
     // ── Modifiers ─────────────────────────────────────────────────────────────
     modifier onlyKeeper() {
@@ -403,6 +404,13 @@ contract ALMVault_Singularity is ERC4626, Ownable {
         withdrawalRequests[msg.sender] += shares;
         totalWithdrawalRequests += shares;
         emit WithdrawalRequested(msg.sender, shares);
+    }
+
+    // ── Rewards ───────────────────────────────────────────────────────────────
+
+    function claimRewards() external {
+        // Dummy logic for event integration testing
+        emit RewardsClaimed(msg.sender, 0);
     }
 
     // ── Emergency ─────────────────────────────────────────────────────────────

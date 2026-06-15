@@ -146,6 +146,20 @@ L1_ORACLE_ABI = [
     }
 ]
 
+POINTS_REGISTRY_ABI = [
+    {
+        "inputs": [
+            {"internalType": "address[]", "name": "users", "type": "address[]"},
+            {"internalType": "uint256[]", "name": "amounts", "type": "uint256[]"}
+        ],
+        "name": "mintPointsBatch",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+]
+POINTS_REGISTRY_ADDRESS = "0xBf6b8A92F609B382182b7fb5df9828e33e834270"
+
 CSV_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "history_log.csv")
 
 
@@ -181,6 +195,73 @@ def export_json_and_push():
     except Exception as e:
         logger.error("[Git] Error pushing PnL history: %s", e)
 
+def run_points_airdrop(w3, vault_address, wallet):
+    try:
+        last_mint_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "last_mint.json")
+        now = time.time()
+        
+        if os.path.exists(last_mint_file):
+            with open(last_mint_file, "r") as f:
+                data = json.load(f)
+                if now - data.get("last_run", 0) < 86400:
+                    return # skip if < 24h
+                    
+        logger.info("[Epoch 1] Starting daily points minting...")
+        
+        transfer_event_signature = w3.keccak(text="Transfer(address,address,uint256)").hex()
+        logs = w3.eth.get_logs({
+            "fromBlock": 0,
+            "toBlock": "latest",
+            "address": vault_address,
+            "topics": [transfer_event_signature]
+        })
+        
+        holders = set()
+        for log in logs:
+            to_addr = "0x" + log["topics"][2].hex()[26:]
+            holders.add(w3.to_checksum_address(to_addr))
+            
+        users_to_mint = []
+        amounts_to_mint = []
+        
+        for holder in holders:
+            if holder == w3.to_checksum_address("0x0000000000000000000000000000000000000000"):
+                continue
+            erc20 = w3.eth.contract(address=vault_address, abi=ERC20_ABI)
+            bal = erc20.functions.balanceOf(holder).call()
+            if bal > 0:
+                points = bal * 3
+                users_to_mint.append(holder)
+                amounts_to_mint.append(points)
+                
+        if len(users_to_mint) > 0:
+            points_contract = w3.eth.contract(address=POINTS_REGISTRY_ADDRESS, abi=POINTS_REGISTRY_ABI)
+            
+            latest_block = w3.eth.get_block('latest')
+            base_fee = latest_block.get('baseFeePerGas', 0)
+            max_priority_fee = w3.eth.max_priority_fee
+            max_fee_per_gas = int(base_fee * 1.15) + max_priority_fee
+            
+            nonce = w3.eth.get_transaction_count(wallet, "pending")
+            
+            tx = points_contract.functions.mintPointsBatch(users_to_mint, amounts_to_mint).build_transaction({
+                "from": wallet,
+                "nonce": nonce,
+                "maxFeePerGas": max_fee_per_gas,
+                "maxPriorityFeePerGas": max_priority_fee,
+                "gas": 300000 + (len(users_to_mint) * 30000)
+            })
+            signed_tx = w3.eth.account.sign_transaction(tx, config.PRIVATE_KEY)
+            tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            logger.info(f"[Epoch 1] Minted points to {len(users_to_mint)} users. Tx: {tx_hash.hex()}")
+            
+            with open(last_mint_file, "w") as f:
+                json.dump({"last_run": now}, f)
+        else:
+            logger.info("[Epoch 1] No depositors found.")
+            
+    except Exception as e:
+        logger.error(f"[Epoch 1] Points minting failed: {e}")
 
 # ── Main ─────────────────────────────────────────────────────────────────────
 def main():
@@ -228,6 +309,8 @@ def main():
     while True:
         action_taken = "No Action"
         timestamp_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        
+        run_points_airdrop(w3, vault, wallet)
 
         try:
             logger.info("--- [Iteration %d] ---", loop_count)

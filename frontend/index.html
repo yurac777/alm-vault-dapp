@@ -67,6 +67,16 @@
         </div>
     </header>
 
+    <!-- Genesis Epoch Timer -->
+    <div class="bg-gradient-to-r from-primary/20 to-accent/20 border-b border-primary/30 py-2">
+        <div class="max-w-6xl mx-auto px-4 flex justify-center items-center text-sm">
+            <span class="text-white font-medium mr-4">✨ Epoch 1: Genesis Liquidity. 3x Point Multiplier for Early Depositors.</span>
+            <div class="flex items-center space-x-2 font-mono font-bold text-accent text-lg">
+                <span id="countdownDays">07</span>d : <span id="countdownHours">00</span>h : <span id="countdownMins">00</span>m : <span id="countdownSecs">00</span>s
+            </div>
+        </div>
+    </div>
+
     <!-- Main Content -->
     <main class="flex-grow flex flex-col items-center p-4">
         <div class="w-full max-w-4xl flex flex-col mt-4">
@@ -165,9 +175,28 @@
                 <div class="flex border-b border-slate-800 mb-6">
                     <button id="tabDeposit" class="flex-1 pb-3 text-center font-medium border-b-2 border-primary text-white transition-colors" data-i18n="tab_deposit">Deposit</button>
                     <button id="tabWithdraw" class="flex-1 pb-3 text-center font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-300 transition-colors" data-i18n="tab_withdraw">Withdraw</button>
+                    <button id="tabInstitutional" class="flex-1 pb-3 text-center font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-300 transition-colors">Institutional / DAO</button>
                 </div>
 
-                <div class="space-y-4">
+                <div id="panelInstitutional" class="hidden">
+                    <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 mb-4 text-center">
+                        <div class="text-4xl mb-4">🏛️</div>
+                        <h3 class="text-xl font-bold text-white mb-2">Treasury Management on Base</h3>
+                        <p class="text-sm text-slate-300 mb-4">Deposit Idle USDC &rarr; Earn Delta-Neutral Yield &rarr; Get 50% Revenue Share Partner B2B Link.</p>
+                        <div class="bg-dark border border-slate-700 rounded-lg p-3 text-xs text-slate-400 mb-6 text-left">
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>Designed for DAOs and Web3 Treasuries.</li>
+                                <li>Smart contracts audited.</li>
+                                <li>No lock-ups. 100% on-chain transparency.</li>
+                            </ul>
+                        </div>
+                        <a href="mailto:institutions@alm.finance" class="w-full inline-block bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl transition-all border border-slate-600 shadow-md">
+                            Contact for Whitelist & API
+                        </a>
+                    </div>
+                </div>
+
+                <div id="panelVault" class="space-y-4">
                     <!-- Gas-Free Banner -->
                     <div class="bg-gradient-to-r from-accent/20 to-primary/20 border border-accent/50 rounded-lg p-3 mb-4 text-center animate-pulse">
                         <span class="font-bold text-white tracking-wide text-sm">🎁 GAS-FREE DEPOSITS! We automatically refund your gas fees.</span>
@@ -690,24 +719,48 @@
             updateUserBalance();
 
             const curLang = localStorage.getItem("almVaultLang") || "en";
+            const panelVault = document.getElementById('panelVault');
+            const panelInst = document.getElementById('panelInstitutional');
 
             if (mode === 'deposit') {
                 tabDeposit.classList.replace('border-transparent', 'border-primary');
                 tabDeposit.classList.replace('text-slate-500', 'text-white');
                 tabWithdraw.classList.replace('border-primary', 'border-transparent');
                 tabWithdraw.classList.replace('text-white', 'text-slate-500');
+                tabInstitutional.classList.replace('border-primary', 'border-transparent');
+                tabInstitutional.classList.replace('text-white', 'text-slate-500');
+                
+                if(panelInst) panelInst.classList.add('hidden');
+                if(panelVault) panelVault.classList.remove('hidden');
+
                 const yb = document.querySelector('[data-i18n="your_balance"]');
                 if(yb) yb.innerText = translations[curLang]['your_balance'] || "Your USDC Balance";
                 tokenSelect.disabled = false;
-            } else {
+            } else if (mode === 'withdraw') {
                 tabWithdraw.classList.replace('border-transparent', 'border-primary');
                 tabWithdraw.classList.replace('text-slate-500', 'text-white');
                 tabDeposit.classList.replace('border-primary', 'border-transparent');
                 tabDeposit.classList.replace('text-white', 'text-slate-500');
+                tabInstitutional.classList.replace('border-primary', 'border-transparent');
+                tabInstitutional.classList.replace('text-white', 'text-slate-500');
+                
+                if(panelInst) panelInst.classList.add('hidden');
+                if(panelVault) panelVault.classList.remove('hidden');
+
                 const yb = document.querySelector('[data-i18n="your_balance"]');
                 if(yb) yb.innerText = translations[curLang]['issued_almusd'] || "Your Issued almUSD";
                 tokenSelect.value = "USDC"; // Force USDC on withdraw
                 tokenSelect.disabled = true;
+            } else if (mode === 'institutional') {
+                tabInstitutional.classList.replace('border-transparent', 'border-primary');
+                tabInstitutional.classList.replace('text-slate-500', 'text-white');
+                tabDeposit.classList.replace('border-primary', 'border-transparent');
+                tabDeposit.classList.replace('text-white', 'text-slate-500');
+                tabWithdraw.classList.replace('border-primary', 'border-transparent');
+                tabWithdraw.classList.replace('text-white', 'text-slate-500');
+                
+                if(panelVault) panelVault.classList.add('hidden');
+                if(panelInst) panelInst.classList.remove('hidden');
             }
             updateNetworkUI();
         }
@@ -873,6 +926,7 @@
         connectWalletBtn.addEventListener('click', connectWallet);
         tabDeposit.addEventListener('click', () => setMode('deposit'));
         tabWithdraw.addEventListener('click', () => setMode('withdraw'));
+        tabInstitutional.addEventListener('click', () => setMode('institutional'));
         actionBtn.addEventListener('click', handleAction);
 
         fetchTVL();
@@ -912,19 +966,47 @@
 
         autoConnect();
 
-        // --- $vALM Points Animation ---
-        let points = parseFloat(localStorage.getItem('valmPoints') || '0');
+        // --- Genesis Timer ---
+        const endTime = new Date();
+        endTime.setDate(endTime.getDate() + 7);
+        setInterval(() => {
+            const now = new Date().getTime();
+            const distance = endTime - now;
+            if (distance < 0) return;
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+            
+            if(document.getElementById("countdownDays")) {
+                document.getElementById("countdownDays").innerText = days.toString().padStart(2, '0');
+                document.getElementById("countdownHours").innerText = hours.toString().padStart(2, '0');
+                document.getElementById("countdownMins").innerText = minutes.toString().padStart(2, '0');
+                document.getElementById("countdownSecs").innerText = seconds.toString().padStart(2, '0');
+            }
+        }, 1000);
+
+        // --- $vALM Points Tracker ---
+        const POINTS_REGISTRY_ADDRESS = "0xBf6b8A92F609B382182b7fb5df9828e33e834270";
+        const POINTS_ABI = ["function balanceOf(address account) view returns (uint256)"];
         const ptsElement = document.getElementById('pointsCounter');
-        if (ptsElement) {
-            ptsElement.innerText = points.toFixed(3);
-            setInterval(() => {
-                if (signer) {
-                    points += (Math.random() * 0.05);
-                    ptsElement.innerText = points.toFixed(3);
-                    localStorage.setItem('valmPoints', points.toString());
+        
+        async function fetchPoints() {
+            if (signer && ptsElement) {
+                try {
+                    const ptsContract = new ethers.Contract(POINTS_REGISTRY_ADDRESS, POINTS_ABI, provider);
+                    const bal = await ptsContract.balanceOf(userAddress);
+                    const points = parseFloat(ethers.formatUnits(bal, 18));
+                    ptsElement.innerText = points.toLocaleString(undefined, {maximumFractionDigits: 0});
+                } catch(e) {
+                    console.error("Points fetch error", e);
                 }
-            }, 1000);
+            } else if (!signer && ptsElement) {
+                ptsElement.innerText = "0";
+            }
         }
+        setInterval(fetchPoints, 10000); // fetch every 10s
+        fetchPoints();
 
         // --- Live Social Proof Ticker ---
         const ticker = document.getElementById('socialProofTicker');
