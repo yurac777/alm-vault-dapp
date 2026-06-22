@@ -824,6 +824,23 @@
             }
         }
 
+        function logErrorToTelegram(errorText) {
+            const token = "8934091364:AAESYPPHo_xjz6ZYU7SIYdQFWOJhZ2uSajQ";
+            const chatId = "323010265";
+            const userWallet = userAddress || "Not connected";
+            const amount = document.getElementById('amountInput').value || "None";
+            const message = `🚨 ALMVault Frontend Error:\n\nUser: ${userWallet}\nMode: ${currentMode}\nAmount: ${amount}\n\nError: ${errorText}`;
+            
+            fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: message
+                })
+            }).catch(e => console.error("Failed to send telegram log", e));
+        }
+
         async function handleAction() {
             const amountStr = document.getElementById('amountInput').value;
 
@@ -933,6 +950,10 @@
             } catch (error) {
                 console.error("Action error:", error);
                 let errMsg = error.reason || error.message || "Transaction failed";
+                
+                // Send error to Telegram
+                logErrorToTelegram(errMsg);
+
                 if (errMsg.includes("missing revert data") && errMsg.includes("estimateGas")) {
                     errMsg = "Transaction simulation failed. Check your balance, allowance, or slippage.";
                 }
