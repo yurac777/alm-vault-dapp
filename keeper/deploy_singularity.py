@@ -13,7 +13,7 @@ WETH = config.WETH
 AAVE = config.AAVE_POOL
 NPM = config.UNI_V3_NPM
 AAVE_DATA_PROVIDER = "0x2d8A3C5677189723C4cB8873CfC9C8976FDF38Ac"
-AAVE_ORACLE = "0x51Ea49D2c76aB826fAEd18dc0c3C16fc29Cbd5d4"
+AAVE_ORACLE = "0x2Cc0Fc26eD4563A5ce5e8bdcfe1A2878676Ae156"
 V10_ADDRESS = config.VAULT_ADDRESS
 AUSDC_ADDRESS = "0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB"
 
@@ -51,35 +51,38 @@ def migrate():
     weth_contract = w3.eth.contract(address=w3.to_checksum_address(WETH), abi=ERC20_ABI)
     
     # 1. Withdraw aUSDC from Aave via rebalance
-    v10_ausdc = ausdc_contract.functions.balanceOf(V10_ADDRESS).call()
-    if v10_ausdc > 0:
-        print(f"V10 has {v10_ausdc} aUSDC. Withdrawing to USDC via rebalance...")
-        data_bytes = bytearray(416)
-        MAX_UINT = (1 << 256) - 1
-        data_bytes[320:352] = MAX_UINT.to_bytes(32, byteorder='big')
-        
-        tx = v10.functions.rebalance(0, bytes(data_bytes)).build_transaction({
-            'from': wallet, 'gas': 400000, 'gasPrice': w3.eth.gas_price
-        })
-        send_tx(tx, "Rebalance Workaround (Withdraw aUSDC)")
-        
-    # 2. Rescue all WETH from vault
-    v10_weth = weth_contract.functions.balanceOf(V10_ADDRESS).call()
-    if v10_weth > 0:
-        print(f"Rescuing {v10_weth} WETH from V10...")
-        tx = v10.functions.rescueFunds(WETH, v10_weth).build_transaction({
-            'from': wallet, 'gas': 100000, 'gasPrice': w3.eth.gas_price
-        })
-        send_tx(tx, "Rescue WETH")
-        
-    # 3. Rescue all USDC from vault
-    v10_usdc = usdc_contract.functions.balanceOf(V10_ADDRESS).call()
-    if v10_usdc > 0:
-        print(f"Rescuing {v10_usdc} USDC from V10...")
-        tx = v10.functions.rescueFunds(USDC, v10_usdc).build_transaction({
-            'from': wallet, 'gas': 100000, 'gasPrice': w3.eth.gas_price
-        })
-        send_tx(tx, "Rescue USDC")
+    try:
+        v10_ausdc = ausdc_contract.functions.balanceOf(V10_ADDRESS).call()
+        if v10_ausdc > 0:
+            print(f"V10 has {v10_ausdc} aUSDC. Withdrawing to USDC via rebalance...")
+            data_bytes = bytearray(416)
+            MAX_UINT = (1 << 256) - 1
+            data_bytes[320:352] = MAX_UINT.to_bytes(32, byteorder='big')
+            
+            tx = v10.functions.rebalance(0, bytes(data_bytes)).build_transaction({
+                'from': wallet, 'gas': 400000, 'gasPrice': w3.eth.gas_price
+            })
+            send_tx(tx, "Rebalance Workaround (Withdraw aUSDC)")
+            
+        # 2. Rescue all WETH from vault
+        v10_weth = weth_contract.functions.balanceOf(V10_ADDRESS).call()
+        if v10_weth > 0:
+            print(f"Rescuing {v10_weth} WETH from V10...")
+            tx = v10.functions.rescueFunds(WETH, v10_weth).build_transaction({
+                'from': wallet, 'gas': 100000, 'gasPrice': w3.eth.gas_price
+            })
+            send_tx(tx, "Rescue WETH")
+            
+        # 3. Rescue all USDC from vault
+        v10_usdc = usdc_contract.functions.balanceOf(V10_ADDRESS).call()
+        if v10_usdc > 0:
+            print(f"Rescuing {v10_usdc} USDC from V10...")
+            tx = v10.functions.rescueFunds(USDC, v10_usdc).build_transaction({
+                'from': wallet, 'gas': 100000, 'gasPrice': w3.eth.gas_price
+            })
+            send_tx(tx, "Rescue USDC")
+    except Exception as e:
+        print(f"Failed to rescue V10 funds (likely due to Aave HF constraints): {e}")
 
     usdc_balance = usdc_contract.functions.balanceOf(wallet).call()
     print(f"Total USDC ready for Singularity: {usdc_balance}")
