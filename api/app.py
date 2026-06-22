@@ -85,7 +85,7 @@ def frame_home():
 @app.route('/api/frame/tx/approve', methods=['POST'])
 def frame_tx_approve():
     erc20 = w3.eth.contract(address=USDC_ADDRESS, abi=get_erc20_abi())
-    calldata = erc20.encodeABI(fn_name="approve", args=[VAULT_ADDRESS, DEPOSIT_AMOUNT])
+    calldata = erc20.encode_abi("approve", args=[VAULT_ADDRESS, DEPOSIT_AMOUNT])
     
     return jsonify({
         "chainId": "eip155:8453",
@@ -120,7 +120,7 @@ def frame_tx_deposit():
     user_address = untrusted_data.get("address", "0x0000000000000000000000000000000000000000")
     
     vault = w3.eth.contract(address=VAULT_ADDRESS, abi=get_vault_abi())
-    calldata = vault.encodeABI(fn_name="deposit", args=[DEPOSIT_AMOUNT, user_address])
+    calldata = vault.encode_abi("deposit", args=[DEPOSIT_AMOUNT, user_address])
     
     return jsonify({
         "chainId": "eip155:8453",

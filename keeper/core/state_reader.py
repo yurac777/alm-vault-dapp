@@ -5,8 +5,12 @@ Sources: Chainlink (ETH price), Uniswap V3 Pool slot0 (current tick).
 import logging
 from decimal import Decimal
 
-from keeper.connectors.base_rpc import BaseConnector
-from keeper.core.math import price_to_tick, get_closest_usable_tick
+try:
+    from keeper.connectors.base_rpc import BaseConnector
+    from keeper.core.math import price_to_tick, get_closest_usable_tick
+except ImportError:
+    from connectors.base_rpc import BaseConnector
+    from core.math import price_to_tick, get_closest_usable_tick
 import config
 
 logger = logging.getLogger("StateReader")

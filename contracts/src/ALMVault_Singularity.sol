@@ -16,7 +16,17 @@ interface IAaveProtocolDataProvider {
     function getReserveTokensAddresses(address asset) external view returns (address aTokenAddress, address stableDebtTokenAddress, address variableDebtTokenAddress);
 }
 
-contract ALMVault_Singularity is ERC4626, Ownable {
+interface IERC3156FlashBorrower {
+    function onFlashLoan(address initiator, address token, uint256 amount, uint256 fee, bytes calldata data) external returns (bytes32);
+}
+
+interface IERC3156FlashLender {
+    function maxFlashLoan(address token) external view returns (uint256);
+    function flashFee(address token, uint256 amount) external view returns (uint256);
+    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 amount, bytes calldata data) external returns (bool);
+}
+
+contract ALMVault_Singularity is ERC4626, Ownable, IERC3156FlashLender {
     using SafeERC20 for IERC20;
 
     // ── Roles ────────────────────────────────────────────────────────────────
@@ -418,5 +428,42 @@ contract ALMVault_Singularity is ERC4626, Ownable {
     function rescueFunds(address token, uint256 amount) external onlyOwner {
         require(token != address(0), "ALMVault: Invalid token");
         IERC20(token).safeTransfer(msg.sender, amount);
+    }
+
+    // ── ERC-3156 FlashLender ─────────────────────────────────────────────────
+    bytes32 private constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
+
+    function maxFlashLoan(address token) public view override returns (uint256) {
+        if (token == asset()) {
+            return totalAssets();
+        }
+        return 0;
+    }
+
+    function flashFee(address token, uint256 amount) public view override returns (uint256) {
+        require(token == asset(), "FlashLender: Unsupported currency");
+        return (amount * 1) / 10000; // 0.01%
+    }
+
+    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 amount, bytes calldata data) external override returns (bool) {
+        require(token == asset(), "FlashLender: Unsupported currency");
+        uint256 fee = flashFee(token, amount);
+        
+        uint256 initialBalance = IERC20(token).balanceOf(address(this));
+        require(initialBalance >= amount, "FlashLender: Not enough liquidity");
+        
+        IERC20(token).safeTransfer(address(receiver), amount);
+        
+        require(
+            receiver.onFlashLoan(msg.sender, token, amount, fee, data) == CALLBACK_SUCCESS,
+            "FlashLender: Callback failed"
+        );
+        
+        IERC20(token).safeTransferFrom(address(receiver), address(this), amount + fee);
+        
+        uint256 newBalance = IERC20(token).balanceOf(address(this));
+        require(newBalance >= initialBalance + fee, "FlashLender: Repayment failed");
+        
+        return true;
     }
 }

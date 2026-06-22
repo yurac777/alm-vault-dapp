@@ -12,7 +12,7 @@ load_dotenv(env_path)
 RPC_URL       = os.getenv("BASE_MAINNET_RPC", "https://base-mainnet.g.alchemy.com/v2/IvMTCy2p4_jk6PCd5-2Gu")
 PRIVATE_KEY   = os.getenv("PRIVATE_KEY", "")
 WALLET        = os.getenv("WALLET_ADDRESS", "")
-VAULT_ADDRESS = "0x2726c74D2e0A94Ec181Beb618569b10116415289"
+VAULT_ADDRESS = os.getenv("VAULT_ADDRESS", "0x2726c74D2e0A94Ec181Beb618569b10116415289")
 
 # ── On-Chain Addresses (Base Mainnet) ─────────────────────────────────────
 USDC          = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"

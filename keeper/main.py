@@ -314,9 +314,6 @@ def main():
 
         try:
             logger.info("--- [Iteration %d] ---", loop_count)
-            if loop_count >= 2:
-                logger.info("Stopping after 2 iterations to show proof.")
-                break
 
             # ── Read state ───────────────────────────────────────────────
             try:
@@ -335,6 +332,7 @@ def main():
                 nft_value_usd = 0.0
                 expected_fees_weth = 0
                 expected_fees_usdc = 0
+                amt0, amt1 = 0, 0  # инициализируем заранее для rebalance-пути
                 if current_token_id != 0:
                     pos = npm_contract.functions.positions(current_token_id).call()
                     old_tick_lower, old_tick_upper = pos[5], pos[6]

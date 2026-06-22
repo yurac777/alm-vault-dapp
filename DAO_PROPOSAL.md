@@ -23,11 +23,26 @@ Security of the DAO's capital is the highest priority.
 - **Impermanent Loss (IL) Mitigation:** The vault algorithmically borrows the exact amount of volatile asset (WETH) needed to pair with USDC. If ETH goes up, the Uniswap LP loses ETH but gains USDC. Simultaneously, the Aave debt increases in USD value. These two forces mathematically cancel out (Delta = ~0), leaving only the accrued trading fees as profit.
 - **Liquidation Risk:** The SRE Keeper maintains a dynamic Health Factor on Aave (Base: 1.60, scaling up to 2.00 during high volatility). This provides a massive buffer against flash crashes, preventing liquidations.
 
-## 4. Execution Steps
-If this proposal passes:
-1. The multisig signers will approve $500,000 USDC to the ALMVault contract on Base: `0x...`
-2. The multisig will call `deposit(500000000000, MULTISIG_ADDRESS)` to mint `almUSD` shares.
-3. The DAO Treasury instantly begins accruing yield, which will be periodically harvested or auto-compounded.
+## 4. Execution Steps (On-Chain Payload)
+If this proposal passes, the following batched transaction payload must be executed by the DAO Multisig (e.g., via Gnosis Safe Transaction Builder):
+
+### Transaction 1: Approve USDC
+- **Target:** `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` (USDC on Base)
+- **Value:** `0`
+- **Method:** `approve(address spender, uint256 amount)`
+- **Calldata (ABI Encoded):**
+  ```text
+  0x095ea7b30000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000746a528800
+  ```
+
+### Transaction 2: Deposit into ALMVault
+- **Target:** ALMVault_Singularity Contract Address
+- **Value:** `0`
+- **Method:** `deposit(uint256 assets, address receiver)`
+- **Calldata (ABI Encoded for $500,000 to DAO Treasury Address):**
+  ```text
+  0x6e553f65000000000000000000000000000000000000000000000000000000746a5288000000000000000000000000000000000000000000000000000000000000000002
+  ```
 
 ## 5. Conclusion
 Allocating a conservative portion of the treasury to a high-yield, delta-neutral strategy ensures the DAO continues to grow its runway regardless of market conditions. We urge the community to vote **YES** and secure the Epoch 1 multiplier.
