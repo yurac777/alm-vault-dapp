@@ -16,3 +16,9 @@ Visit our [DApp](https://alm-quant.xyz) to mint almUSD.
 
 ## Deployment
 Vault Contract Address: `0x2726c74D2e0A94Ec181Beb618569b10116415289`
+
+### Remote Deployment Server
+- **Host**: `100.116.182.78`
+- **User**: `aiuser`
+- **Password**: *See .env file (SuperPass123!)*
+- **GitHub Token**: *See .env file*
