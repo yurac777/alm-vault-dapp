@@ -2,7 +2,6 @@ import os
 import time
 import random
 from web3 import Web3
-from web3.middleware import geth_poa_middleware
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -22,7 +21,7 @@ UNI_ROUTER = "0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD"
 WETH = "0x4200000000000000000000000000000000000006"
 
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
-w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+# Middleware injection removed for web3.py v7 compatibility
 
 # Minimal ERC20 ABI for Approval
 ERC20_ABI = [

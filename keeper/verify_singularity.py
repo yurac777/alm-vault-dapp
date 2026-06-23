@@ -7,11 +7,7 @@ sys.path.insert(0, 'keeper')
 load_dotenv('keeper/.env')
 
 RPC_URL = os.getenv("BASE_MAINNET_RPC", "https://base-mainnet.g.alchemy.com/v2/IvMTCy2p4_jk6PCd5-2Gu")
-BASESCAN_API_KEY = os.getenv("ETHERSCAN_TOKEN")
-if not BASESCAN_API_KEY:
-    BASESCAN_API_KEY = os.getenv("BASESCAN_API_KEY")
-if not BASESCAN_API_KEY:
-    BASESCAN_API_KEY = os.getenv("POLYGONSCAN_TOKEN")
+BASESCAN_API_KEY = os.getenv("ETHERSCAN_TOKEN", "119KN47TI7YNX97TJZYXXI413ZPR7IVWXF")
 
 VAULT_ADDRESS = os.getenv("VAULT_ADDRESS")
 ZAPPER_ADDRESS = os.getenv("ZAPPER_ADDRESS")
@@ -29,8 +25,7 @@ def verify_contract(name, address, constructor_args=""):
         "--etherscan-api-key", BASESCAN_API_KEY,
         "--compiler-version", "v0.8.24+commit.e11b9ed9",
         "--watch",
-        "--verifier", "etherscan",
-        "--verifier-url", "https://api.basescan.org/api"
+        "--chain", "base"
     ]
     if constructor_args:
         cmd.extend(["--constructor-args", constructor_args])
@@ -41,19 +36,22 @@ def verify_contract(name, address, constructor_args=""):
     import time
     for attempt in range(max_retries):
         print(f"Attempt {attempt + 1}/{max_retries}...")
-        result = subprocess.run(cmd, cwd="contracts", check=False, capture_output=True, text=True)
+        env = os.environ.copy()
+        env["HTTP_PROXY"] = "http://100.116.182.78:10809"
+        env["HTTPS_PROXY"] = "http://100.116.182.78:10809"
+        result = subprocess.run(cmd, cwd="contracts", check=False, capture_output=True, text=True, env=env)
         print(result.stdout)
         if result.stderr:
             print(result.stderr)
         
         if result.returncode == 0 and "OK" in result.stdout or "already verified" in result.stdout.lower() or "successful" in result.stdout.lower():
-            print(f"✅ {name} verified successfully!")
+            print(f"[OK] {name} verified successfully!")
             return
         
         print("Verification failed or connection reset. Retrying in 10 seconds...")
         time.sleep(10)
         
-    print(f"❌ Failed to verify {name} after {max_retries} attempts.")
+    print(f"[FAIL] Failed to verify {name} after {max_retries} attempts.")
 
 if __name__ == "__main__":
     if not BASESCAN_API_KEY:
